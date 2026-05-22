@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISLAND BOYS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="containerPanel">
+        <!-- HOME MOVEMENT SCREEN -->
+        <div id="homePanel" class="screen active">
+            <button id="playBtn" class="action-trigger"></button>
+            <button id="homeTutBtn" class="action-trigger"></button>
+            <button id="homeExitBtn" class="action-trigger"></button>
+        </div>
+
+        <!-- TUTORIAL INFORMATION DISPLAY SCREEN -->
+        <div id="tutorialPanel" class="screen">
+            <div id="instructionCard">
+                <div class="card-header">
+                    <span class="palm-left">🌿</span>
+                    <h2>Island Adventure Guide</h2>
+                    <span class="palm-right">🌿</span>
+                </div>
+                <p class="subtitle">Learn the island rules before you set sail.</p>
+                <div class="instruction-block">
+                    <p>Use your navigation skills to move across the board, then decide whether to accept island power-ups.</p>
+                    <ul>
+                        <li><strong>Arrow Up</strong> — move forward toward the finish</li>
+                        <li><strong>Arrow Left</strong> — shift left along the map</li>
+                        <li><strong>Arrow Right</strong> — shift right along the map</li>
+                        <li><strong>Y</strong> — accept the power-up</li>
+                        <li><strong>N</strong> — decline the power-up</li>
+                    </ul>
+                    <p class="hint">Keep the game screen active and use the keyboard after your roll.</p>
+                </div>
+                <div class="guide-foot">
+                    <span>Island Tip:</span>
+                    <span>Power-ups can be powerful, but only if you choose them wisely.</span>
+                </div>
+            </div>
+            <button id="tutBackBtn" class="action-trigger"></button>
+        </div>
+
+        <!-- THE MAIN ACTIVE GAME INTERFACE FRAME -->
+        <div id="activeGamePanel" class="screen">
+            <canvas id="gameCanvas" width="600" height="1080"></canvas>
+            <button id="rollBtn" class="action-trigger"></button>
+            <button id="gamePauseBtn" class="action-trigger"></button>
+        </div>
+
+        <!-- MODAL OVERLAY SUSPENSION POPUP CONTAINER -->
+        <div id="pauseOverlay" class="overlay">
+            <div id="pauseMenuCard">
+                <button id="resumeBtn" class="action-trigger"></button>
+                <button id="quitBtn" class="action-trigger"></button>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
