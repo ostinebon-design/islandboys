@@ -321,7 +321,6 @@ body {
     position: relative;
     width: 100%;
     padding: 22px 20px 22px;
-    /* Outer mossy border */
     background: #3d2810;
     border: 6px solid #4a8a2a;
     border-radius: 14px;
@@ -333,7 +332,6 @@ body {
         0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
-/* Crown icon on top */
 .powerup-card::before {
     content: "👑";
     position: absolute;
@@ -345,7 +343,6 @@ body {
     z-index: 2;
 }
 
-/* Inner wooden board surface */
 .powerup-card::after {
     content: "";
     position: absolute;
@@ -361,7 +358,6 @@ body {
     display: block;
 }
 
-/* Stone medallion with question mark */
 .powerup-medallion {
     position: relative;
     z-index: 1;
@@ -392,7 +388,6 @@ body {
         0 0 12px rgba(200, 170, 80, 0.4);
 }
 
-/* Instruction label text */
 .powerup-label {
     position: relative;
     z-index: 1;
@@ -407,7 +402,6 @@ body {
     line-height: 1.5;
 }
 
-/* Button grid layouts */
 .powerup-buttons {
     position: relative;
     z-index: 1;
@@ -425,13 +419,11 @@ body {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-/* Wooden plank buttons */
 .powerup-btn {
     width: 100%;
     height: 50px;
     border: 2px solid #7a5030;
     border-radius: 8px;
-    /* Layered wood-grain gradient */
     background-image:
         repeating-linear-gradient(
             88deg,
@@ -500,28 +492,36 @@ body {
 }
 
 /* =============================================
-   MOBILE CONTROL BUTTONS
+   MOBILE CONTROLLER — controller.png aligned
+   Image is 2000×1006 (ratio ~1.988:1)
+   Layout zones (% of image width):
+     D-Pad UP:    center ~21%,  y ~38%
+     D-Pad LEFT:  center ~14%,  y ~60%
+     D-Pad RIGHT: center ~28%,  y ~60%
+     ROLL:        center ~47%,  y ~52%
+     Y btn:       center ~64%,  y ~52%
+     N btn:       center ~76%,  y ~52%
    ============================================= */
 .mobile-controls-container {
     display: none;
     position: absolute;
-    bottom: 16px;
+    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: min(100%, 380px);
-    padding: 0;
-    background: transparent;
+    /* Keep image ratio 2000:1006 */
+    width: min(100vw, 600px);
+    height: calc(min(100vw, 600px) / 1.988);
+    background-image: url('assets/controller.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
     border: none;
     box-shadow: none;
-    flex-direction: row;
-    gap: 18px;
-    align-items: center;
-    justify-content: space-between;
 }
 
 @media (max-width: 768px) {
     .mobile-controls-container {
-        display: flex;
+        display: block;
     }
 
     #rollBtn {
@@ -529,141 +529,128 @@ body {
     }
 }
 
-.movement-pad {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 10px;
-    width: 128px;
-    padding: 0;
+/* -----------------------------------------------
+   All buttons are absolutely positioned over the
+   controller image. Coordinates use % so they
+   scale with the container at any viewport width.
+   Button sizes are also % of container dimensions.
+   ----------------------------------------------- */
+
+/* D-Pad: UP arrow — center ~21% x, ~33% y */
+#moveUpBtn {
+    position: absolute;
+    left: calc(21% - 8%);   /* center minus half-width */
+    top: calc(10% );
+    width: 16%;
+    height: 32%;
     background: transparent;
     border: none;
-}
-
-.move-btn {
-    width: 58px;
-    height: 58px;
-    border: 3px solid #063a6f;
-    border-radius: 10px;
-    background: linear-gradient(180deg, #eef4ff 0%, #d0deff 100%);
-    color: #0d264d;
-    font-size: 22px;
-    font-weight: 900;
     cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 0 4px 0 rgba(0, 0, 0, 0.15);
+    color: transparent;
+    font-size: 0;
+    -webkit-tap-highlight-color: rgba(255,255,255,0.15);
+    border-radius: 8px;
+    transition: background 0.1s;
 }
+#moveUpBtn:active { background: rgba(255,255,255,0.18); border-radius: 8px; }
 
-.move-btn:hover {
-    transform: scale(1.02);
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 5px 0 rgba(0, 0, 0, 0.2);
-    background: linear-gradient(180deg, #ffffff 0%, #d9e4ff 100%);
+/* D-Pad: LEFT arrow — center ~13% x, ~62% y */
+#moveLeftBtn {
+    position: absolute;
+    left: calc(5%);
+    top: calc(42%);
+    width: 16%;
+    height: 32%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: transparent;
+    font-size: 0;
+    -webkit-tap-highlight-color: rgba(255,255,255,0.15);
+    border-radius: 8px;
+    transition: background 0.1s;
 }
+#moveLeftBtn:active { background: rgba(255,255,255,0.18); border-radius: 8px; }
 
-.move-btn:active {
-    transform: translateY(1px);
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3), 0 2px 0 rgba(0, 0, 0, 0.2);
-    background: linear-gradient(180deg, #dbe6ff 0%, #b8ccff 100%);
+/* D-Pad: RIGHT arrow — center ~29% x, ~62% y */
+#moveRightBtn {
+    position: absolute;
+    left: calc(37%);
+    top: calc(42%);
+    width: 16%;
+    height: 32%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: transparent;
+    font-size: 0;
+    -webkit-tap-highlight-color: rgba(255,255,255,0.15);
+    border-radius: 8px;
+    transition: background 0.1s;
 }
+#moveRightBtn:active { background: rgba(255,255,255,0.18); border-radius: 8px; }
 
-.move-up {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    margin: 0 auto;
-}
-
-.move-left {
-    grid-column: 1;
-    grid-row: 2;
-}
-
-.move-right {
-    grid-column: 2;
-    grid-row: 2;
-}
-
+/* ROLL button — center ~47% x, ~52% y */
 #rollBtnMobile {
-    width: 92px;
-    height: 92px;
-    border: none;
-    border-radius: 22px;
-    background: radial-gradient(circle at 35% 35%, rgba(255, 240, 190, 0.95), rgba(255, 170, 55, 0.95) 45%, rgba(212, 100, 38, 0.95) 98%);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
-    cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-    background-image: url('assets/roll.png');
-    background-size: 58%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-#rollBtnMobile:hover {
-    transform: scale(1.04);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
-}
-
-#rollBtnMobile:active {
-    transform: scale(0.96);
-    box-shadow: 0 7px 16px rgba(0, 0, 0, 0.24);
-}
-
-.decision-pad {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-direction: row;
+    position: absolute;
+    left: calc(40%);
+    top: calc(18%);
+    width: 20%;
+    height: 55%;
     background: transparent;
     border: none;
-    padding: 0;
-}
-
-.decision-btn {
-    width: 70px;
-    height: 54px;
-    padding: 0;
-    border: 3px solid rgba(0, 0, 0, 0.85);
-    border-radius: 10px;
-    font-size: 18px;
-    font-weight: 900;
     cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 0 4px 0 rgba(0, 0, 0, 0.2);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 230, 230, 0.98) 100%);
+    color: transparent;
+    font-size: 0;
+    -webkit-tap-highlight-color: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    transition: background 0.1s;
+    /* Override any previous background-image */
+    background-image: none !important;
+    box-shadow: none !important;
 }
+#rollBtnMobile:active { background: rgba(255,255,255,0.18); border-radius: 10px; }
+#rollBtnMobile:hover { transform: none; box-shadow: none; }
 
-.accept-btn {
-    border-color: #16882e;
-    background: linear-gradient(180deg, #c8ffd5 0%, #57d459 100%);
-    color: #082f10;
+/* Y (accept) button — center ~64% x, ~52% y */
+#acceptBtn {
+    position: absolute;
+    left: calc(62%);
+    top: calc(18%);
+    width: 14%;
+    height: 55%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: transparent;
+    font-size: 0;
+    -webkit-tap-highlight-color: rgba(255,255,255,0.15);
+    border-radius: 8px;
+    transition: background 0.1s;
 }
+#acceptBtn:active { background: rgba(255,255,255,0.18); border-radius: 8px; }
 
-.accept-btn:hover {
-    transform: scale(1.02);
-    background: linear-gradient(180deg, #daffd9 0%, #6bcc66 100%);
+/* N (decline) button — center ~76% x, ~52% y */
+#declineBtn {
+    position: absolute;
+    left: calc(76%);
+    top: calc(18%);
+    width: 14%;
+    height: 55%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: transparent;
+    font-size: 0;
+    -webkit-tap-highlight-color: rgba(255,255,255,0.15);
+    border-radius: 8px;
+    transition: background 0.1s;
 }
+#declineBtn:active { background: rgba(255,255,255,0.18); border-radius: 8px; }
 
-.accept-btn:active {
-    transform: translateY(1px);
-    background: linear-gradient(180deg, #a6e8ab 0%, #41b140 100%);
-}
-
-.decline-btn {
-    border-color: #8f1010;
-    background: linear-gradient(180deg, #ffcdcd 0%, #ef6b6b 100%);
-    color: #340606;
-}
-
-.decline-btn:hover {
-    transform: scale(1.02);
-    background: linear-gradient(180deg, #ffcfcf 0%, #f17c7c 100%);
-}
-
-.decline-btn:active {
-    transform: translateY(1px);
-    background: linear-gradient(180deg, #e7a5a5 0%, #c83d3d 100%);
+/* Hide the old movement-pad and decision-pad wrappers —
+   buttons are now free-positioned directly on the controller */
+.movement-pad,
+.decision-pad {
+    display: contents; /* children remain in layout but wrapper has no box */
 }
