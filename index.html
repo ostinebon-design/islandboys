@@ -11,8 +11,14 @@
 
         <!-- INTRO VIDEO SCREEN -->
         <div id="introPanel" class="screen active">
-            <video id="introVideo" src="assets/introclip.mp4" playsinline muted></video>
-            <button id="skipIntroBtn">SKIP ▶</button>
+            <video id="introVideo"
+                src="assets/introclip.mp4"
+                playsinline
+                webkit-playsinline
+                muted
+                preload="auto">
+            </video>
+            <button id="skipIntroBtn">TAP TO START ▶</button>
         </div>
 
         <!-- HOME MOVEMENT SCREEN -->
