@@ -22,7 +22,6 @@ body {
     overflow: hidden;
 }
 
-/* Mobile responsive design */
 @media (max-width: 768px) {
     #containerPanel {
         width: 100vw;
@@ -30,8 +29,6 @@ body {
         max-width: 100vw;
         max-height: 100vh;
     }
-
-    /* Canvas sizing is now handled inside #activeGamePanel flex rules below */
 }
 
 .screen {
@@ -85,17 +82,10 @@ body {
     transition: background 0.18s, color 0.18s, transform 0.12s;
 }
 
-#skipIntroBtn:hover {
-    background: rgba(255, 233, 122, 0.22);
-    transform: scale(1.06);
-}
+#skipIntroBtn:hover  { background: rgba(255, 233, 122, 0.22); transform: scale(1.06); }
+#skipIntroBtn:active { transform: scale(0.97); background: rgba(255, 233, 122, 0.35); }
 
-#skipIntroBtn:active {
-    transform: scale(0.97);
-    background: rgba(255, 233, 122, 0.35);
-}
-
-/* BACKGROUND LAYOUT IMAGES */
+/* BACKGROUNDS */
 #homePanel {
     background: url('assets/homebg.jpg') no-repeat center center;
     background-size: 100% 100%;
@@ -106,7 +96,9 @@ body {
     background-size: 100% 100%;
 }
 
-/* CORE EVENT TRIGGER BUTTON STYLING */
+/* =============================================
+   ACTION TRIGGER BUTTONS
+   ============================================= */
 .action-trigger {
     position: absolute;
     border: none;
@@ -119,118 +111,59 @@ body {
     transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
 }
 
-.action-trigger:hover {
-    transform: translateY(-2px) scale(1.04);
-    filter: brightness(1.12);
-}
+.action-trigger:hover  { transform: translateY(-2px) scale(1.04); filter: brightness(1.12); }
+.action-trigger:active { transform: translateY(0px) scale(0.98); filter: brightness(0.96); }
 
-.action-trigger:active {
-    transform: translateY(0px) scale(0.98);
-    filter: brightness(0.96);
-}
+/* HOME BUTTONS — desktop */
+#playBtn     { width: 180px; height: 180px; left: 210px; top: 450px; background-image: url('assets/playbutton.png'); }
+#homeTutBtn  { width: 60px;  height: 60px;  left: 530px; top: 20px;  background-image: url('assets/tutorial.png'); }
+#homeExitBtn { width: 100px; height: 70px;  left: 250px; top: 650px; background-image: url('assets/back.png'); }
 
-#playBtn {
-    width: 180px;
-    height: 180px;
-    left: 210px;
-    top: 450px;
-    background-image: url('assets/playbutton.png');
-}
-
-#homeTutBtn {
-    width: 60px;
-    height: 60px;
-    left: 530px;
-    top: 20px;
-    background-image: url('assets/tutorial.png');
-}
-
-#homeExitBtn {
-    width: 100px;
-    height: 70px;
-    left: 250px;
-    top: 650px;
-    background-image: url('assets/back.png');
-}
-
-/* Mobile: reposition home buttons */
+/* HOME BUTTONS — mobile */
 @media (max-width: 768px) {
     #playBtn {
-        width: 26vw;
-        height: 26vw;
-        left: 50%;
-        top: 66%;
+        width: 26vw; height: 26vw;
+        left: 50%; top: 66%;
         transform: translateX(-50%);
     }
     #playBtn:hover  { transform: translateX(-50%) translateY(-2px) scale(1.04); }
     #playBtn:active { transform: translateX(-50%) translateY(0px)  scale(0.98); }
 
-    #homeTutBtn {
-        width: 9vw;
-        height: 9vw;
-        left: auto;
-        right: 3vw;
-        top: 2.5vh;
-    }
+    #homeTutBtn { width: 9vw; height: 9vw; left: auto; right: 3vw; top: 2.5vh; }
 
     #homeExitBtn {
-        width: 16vw;
-        height: 11vw;
-        left: 50%;
-        top: 82%;
+        width: 16vw; height: 11vw;
+        left: 50%; top: 82%;
         transform: translateX(-50%);
     }
     #homeExitBtn:hover  { transform: translateX(-50%) translateY(-2px) scale(1.04); }
     #homeExitBtn:active { transform: translateX(-50%) translateY(0px)  scale(0.98); }
 }
 
-/* =============================================
-   TUTORIAL — home button (desktop + mobile fix)
-   ============================================= */
+/* TUTORIAL BUTTON */
 #tutBackBtn {
-    width: 100px;
-    height: 100px;
-    left: 20px;
-    top: 20px;
+    width: 100px; height: 100px;
+    left: 20px; top: 20px;
     z-index: 20;
     background-image: url('assets/home.png');
 }
 
 @media (max-width: 768px) {
     #tutBackBtn {
-        width: 16vw;
-        height: 16vw;
-        left: auto;
-        right: 4vw;
-        top: 3vh;
+        width: 16vw; height: 16vw;
+        left: auto; right: 4vw; top: 3vh;
         transform: none;
     }
     #tutBackBtn:hover  { transform: translateY(-2px) scale(1.04); }
     #tutBackBtn:active { transform: translateY(0px)  scale(0.98); }
 }
 
-#instructionCard {
-    position: absolute;
-    left: 36px;
-    right: 36px;
-    top: 120px;
-    bottom: 160px;
-    padding: 28px;
-    border: 4px solid rgba(255, 228, 150, 0.92);
-    border-radius: 32px;
-    background: linear-gradient(180deg, rgba(34, 70, 99, 0.92) 0%, rgba(14, 42, 66, 0.96) 100%);
-    box-shadow: 0 22px 42px rgba(0, 0, 0, 0.45);
-    color: #f7ebc9;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow: auto;
-}
-
 /* =============================================
-   GAME SCREEN — CANVAS + OVERLAID BUTTONS
-
-   FIX: On mobile the panel becomes a flex column.
-   Canvas grows to fill all space above controller.
-   This eliminates the gap / bleed-through glitch.
+   GAME SCREEN
+   Desktop: canvas is absolute, fills the panel.
+   Mobile:  panel is a flex column.
+            canvas height = 100vh - controller height
+            (set by JS via --ctrl-h CSS variable).
    ============================================= */
 #activeGamePanel {
     position: relative;
@@ -240,83 +173,74 @@ body {
     overflow: hidden;
 }
 
-/* Mobile: flex column so canvas + controller stack cleanly */
+/* Desktop canvas */
+#gameCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    display: block;
+}
+
+/* Mobile overrides */
 @media (max-width: 768px) {
     #activeGamePanel {
         display: flex;
         flex-direction: column;
-        overflow: hidden;
     }
 
     #gameCanvas {
         position: relative !important;
         top: auto !important;
         left: auto !important;
+        /* Explicit pixel height: full viewport minus the controller bar.
+           --ctrl-h is written by JS on load and resize.
+           Fallback: 100vw/1.988 ≈ controller natural height. */
         width: 100% !important;
-        height: auto !important;
-        flex: 1 1 auto;
-        min-height: 0;
-        display: block;
+        height: calc(100vh - var(--ctrl-h, calc(100vw / 1.988))) !important;
+        min-height: 0 !important;
+        flex: 0 0 auto;
         z-index: 1;
     }
 }
 
-#gameCanvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
-    display: block;
-}
-
 /* Desktop roll button */
 #rollBtn {
-    width: 105px;
-    height: 70px;
-    left: 247px;
-    top: 1005px;
+    width: 105px; height: 70px;
+    left: 247px; top: 1005px;
     background-image: url('assets/roll.png');
     z-index: 5;
-    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* =============================================
-   PAUSE BUTTON — desktop + mobile fix
-
-   Desktop: absolute pixel offsets matching canvas coords.
-   Mobile:  vw-relative so it scales with the canvas width.
-   ============================================= */
+/* PAUSE BUTTON */
 #gamePauseBtn {
-    width: 50px;
-    height: 50px;
-    left: 470px;
-    top: 115px;
+    width: 50px; height: 50px;
+    left: 470px; top: 115px;
     background-image: url('assets/pause.png');
     z-index: 30;
     transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 @media (max-width: 768px) {
+    #rollBtn { display: none; }
+
     #gamePauseBtn {
-        /* Position is relative to the canvas element now (flex child).
-           We keep it absolutely positioned inside #activeGamePanel
-           using vw percentages that mirror the 470/600 and 115/1080
-           desktop ratios. */
         position: absolute;
+        /* Mirror desktop ratio 470/600 horizontally */
         left:   calc(100vw * 470 / 600);
-        /* Canvas visible height ≈ 100vh minus controller height */
-        top:    calc((100vh - min(calc(100vw / 1.988), 302px)) * 115 / 1080);
+        /* Mirror desktop ratio 115/1080 against canvas height only */
+        top:    calc((100vh - var(--ctrl-h, calc(100vw / 1.988))) * 115 / 1080);
         width:  calc(100vw * 50 / 600);
         height: calc(100vw * 50 / 600);
         z-index: 30;
     }
-
-    #rollBtn {
-        display: none;
-    }
 }
 
-/* SUSPENSION MENU MODAL */
+/* =============================================
+   PAUSE OVERLAY MODAL
+   Uses flexbox centering — JS sets display:flex
+   ============================================= */
 .overlay {
     display: none;
     position: absolute;
@@ -328,62 +252,48 @@ body {
 }
 
 #pauseMenuCard {
+    position: relative;
     width: 400px;
     height: 500px;
-    position: relative;
-    margin: auto;
     background: url('assets/pausebg.png') no-repeat center center;
     background-size: 100% 100%;
 }
 
-/* On mobile, center and scale the pause card */
 @media (max-width: 768px) {
     #pauseMenuCard {
         width: 80vw;
-        height: calc(80vw * 500 / 400);  /* preserve 400:500 aspect */
+        height: calc(80vw * 500 / 400);
     }
 
     #resumeBtn {
-        width: 35%;
-        height: 24%;
-        left: 32.5%;
-        top: 16%;
+        width: 35%; height: 24%;
+        left: 32.5%; top: 16%;
     }
-
     #quitBtn {
-        width: 35%;
-        height: 24%;
-        left: 32.5%;
-        top: 58%;
+        width: 35%; height: 24%;
+        left: 32.5%; top: 58%;
     }
 }
 
 #resumeBtn {
-    width: 150px;
-    height: 150px;
-    left: 125px;
-    top: 90px;
+    width: 150px; height: 150px;
+    left: 125px; top: 90px;
     background-image: url('assets/playbutton.png');
 }
-
 #quitBtn {
-    width: 150px;
-    height: 150px;
-    left: 125px;
-    top: 240px;
+    width: 150px; height: 150px;
+    left: 125px; top: 240px;
     background-image: url('assets/home.png');
 }
 
 /* =============================================
-   POWER-UP OVERLAY — JUNGLE BOARD AESTHETIC
+   POWER-UP OVERLAY
    ============================================= */
 .powerup-overlay {
     display: none;
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     z-index: 20;
     background-color: rgba(0, 0, 0, 0.55);
 }
@@ -395,7 +305,6 @@ body {
     transform: translateX(-50%);
     width: min(92%, 370px);
     max-width: 370px;
-    padding: 0;
     background: transparent;
 }
 
@@ -403,7 +312,7 @@ body {
     display: none;
     position: relative;
     width: 100%;
-    padding: 22px 20px 22px;
+    padding: 22px 20px;
     background: #3d2810;
     border: 6px solid #4a8a2a;
     border-radius: 14px;
@@ -411,18 +320,17 @@ body {
         0 0 0 3px #2a5a14,
         0 0 0 9px #3a7020,
         inset 0 0 0 3px #251508,
-        0 12px 40px rgba(0, 0, 0, 0.8),
-        0 4px 16px rgba(0, 0, 0, 0.6);
+        0 12px 40px rgba(0,0,0,0.8),
+        0 4px 16px rgba(0,0,0,0.6);
 }
 
 .powerup-card::before {
     content: "👑";
     position: absolute;
-    top: -26px;
-    left: 50%;
+    top: -26px; left: 50%;
     transform: translateX(-50%);
     font-size: 30px;
-    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9));
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.9));
     z-index: 2;
 }
 
@@ -434,175 +342,108 @@ body {
     border-radius: 8px;
     border: 2px solid #8a6030;
     z-index: 0;
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
 }
 
-.teleport-card {
-    display: block;
-}
+.teleport-card { display: block; }
 
 .powerup-medallion {
-    position: relative;
-    z-index: 1;
-    width: 76px;
-    height: 76px;
+    position: relative; z-index: 1;
+    width: 76px; height: 76px;
     margin: 0 auto 12px;
-    background: radial-gradient(circle at 38% 32%,
-        #9a8a70 0%, #7a6a50 35%, #5a4a30 65%, #3a2a15 100%);
+    background: radial-gradient(circle at 38% 32%, #9a8a70 0%, #7a6a50 35%, #5a4a30 65%, #3a2a15 100%);
     border-radius: 50%;
     border: 3px solid #aa9060;
-    box-shadow:
-        inset 0 3px 10px rgba(0, 0, 0, 0.55),
-        inset 0 -2px 6px rgba(255, 255, 255, 0.08),
-        0 5px 15px rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 34px;
-    color: #d8c890;
-    font-weight: 900;
-    font-family: 'Courier New', monospace;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7), 0 0 12px rgba(200, 170, 80, 0.4);
+    box-shadow: inset 0 3px 10px rgba(0,0,0,0.55), inset 0 -2px 6px rgba(255,255,255,0.08), 0 5px 15px rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px; color: #d8c890;
+    font-weight: 900; font-family: 'Courier New', monospace;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7), 0 0 12px rgba(200,170,80,0.4);
 }
 
 .powerup-label {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-    color: #e8d8a8;
+    position: relative; z-index: 1;
+    text-align: center; color: #e8d8a8;
     font-family: 'Courier New', monospace;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 12px; font-weight: 700;
     margin-bottom: 14px;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
-    letter-spacing: 0.3px;
-    line-height: 1.5;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    letter-spacing: 0.3px; line-height: 1.5;
 }
 
 .powerup-buttons {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    gap: 8px;
-    width: 100%;
-    justify-items: stretch;
+    position: relative; z-index: 1;
+    display: grid; gap: 8px;
+    width: 100%; justify-items: stretch;
 }
 
 .teleport-buttons  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .operator-buttons  { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 .powerup-btn {
-    width: 100%;
-    height: 50px;
-    border: 2px solid #7a5030;
-    border-radius: 8px;
+    width: 100%; height: 50px;
+    border: 2px solid #7a5030; border-radius: 8px;
     background-image:
-        repeating-linear-gradient(88deg, transparent, transparent 16px,
-            rgba(0,0,0,0.045) 16px, rgba(0,0,0,0.045) 17px),
-        linear-gradient(180deg, #dac09a 0%, #c4a070 18%, #b08050 50%,
-            #9a6e3a 82%, #8a5e2a 100%);
-    color: #2c1810;
-    font-size: 16px;
-    font-weight: 900;
-    font-family: 'Courier New', monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    cursor: pointer;
+        repeating-linear-gradient(88deg, transparent, transparent 16px, rgba(0,0,0,0.045) 16px, rgba(0,0,0,0.045) 17px),
+        linear-gradient(180deg, #dac09a 0%, #c4a070 18%, #b08050 50%, #9a6e3a 82%, #8a5e2a 100%);
+    color: #2c1810; font-size: 16px; font-weight: 900;
+    font-family: 'Courier New', monospace; text-transform: uppercase;
+    letter-spacing: 0.08em; cursor: pointer;
     text-shadow: 0 1px 0 rgba(255,255,255,0.38);
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.42),
-        inset 0 -2px 4px rgba(0,0,0,0.28),
-        0 5px 0 #5a3a18,
-        0 6px 10px rgba(0,0,0,0.45);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.42), inset 0 -2px 4px rgba(0,0,0,0.28), 0 5px 0 #5a3a18, 0 6px 10px rgba(0,0,0,0.45);
     transition: transform 0.08s ease, box-shadow 0.08s ease;
-}
-
-.powerup-btn:hover {
-    background-image:
-        repeating-linear-gradient(88deg, transparent, transparent 16px,
-            rgba(0,0,0,0.045) 16px, rgba(0,0,0,0.045) 17px),
-        linear-gradient(180deg, #ead4b0 0%, #d4b080 18%, #c09060 50%,
-            #aa7e4a 82%, #9a6e3a 100%);
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.5),
-        inset 0 -2px 4px rgba(0,0,0,0.22),
-        0 6px 0 #5a3a18,
-        0 7px 12px rgba(0,0,0,0.5);
 }
 
 .powerup-btn:active {
     transform: translateY(4px);
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.32),
-        inset 0 -1px 3px rgba(0,0,0,0.22),
-        0 1px 0 #5a3a18,
-        0 2px 5px rgba(0,0,0,0.35);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 3px rgba(0,0,0,0.22), 0 1px 0 #5a3a18, 0 2px 5px rgba(0,0,0,0.35);
 }
 
 .panel-cancel-btn { display: none; }
 
 /* =============================================
-   MOBILE CONTROLLER — controller.png aligned
-   On mobile the container is a flex child so
-   position:relative keeps it in normal flow.
+   MOBILE CONTROLLER
+   flex-shrink:0 so it always stays at its natural
+   height and the canvas takes the remaining space.
    ============================================= */
 .mobile-controls-container {
     display: none;
-    /* flex child — let the flow position it */
     position: relative;
-    bottom: auto;
-    left: auto;
-    right: auto;
     width: 100%;
+    /* height set via JS --ctrl-h; fallback below */
     height: calc(100vw / 1.988);
     max-height: 302px;
-    min-height: 220px;
+    min-height: 180px;
     background-image: url('assets/controller.png');
-    background-size: cover;
+    background-size: 100% 100%;
     background-repeat: no-repeat;
     background-position: center;
-    border: none;
-    box-shadow: none;
     z-index: 25;
-    flex-shrink: 0;   /* never shrink — canvas takes the slack */
+    flex-shrink: 0;
     touch-action: manipulation;
 }
 
 @media (max-width: 768px) {
-    .mobile-controls-container {
-        display: block;
-    }
+    .mobile-controls-container { display: block; }
 }
 
-/* Hit-zone buttons — transparent overlays */
 .mobile-controls-container button {
     position: absolute;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: transparent;
-    font-size: 0;
+    background: transparent; border: none;
+    cursor: pointer; color: transparent; font-size: 0;
     -webkit-tap-highlight-color: rgba(255,255,255,0.15);
     touch-action: manipulation;
-    border-radius: 8px;
-    transition: background 0.1s;
-    padding: 0;
-    margin: 0;
+    border-radius: 8px; padding: 0; margin: 0;
 }
 
-.mobile-controls-container button:active {
-    background: rgba(255,255,255,0.2);
-}
+.mobile-controls-container button:active { background: rgba(255,255,255,0.2); }
 
 #moveUpBtn    { left: 13%; top: 5%;  width: 16%; height: 40%; }
 #moveLeftBtn  { left: 4%;  top: 48%; width: 16%; height: 40%; }
 #moveRightBtn { left: 23%; top: 48%; width: 16%; height: 40%; }
 
 #rollBtnMobile {
-    left: 38%;
-    top: 8%;
-    width: 22%;
-    height: 82%;
+    left: 38%; top: 8%; width: 22%; height: 82%;
     border-radius: 12px;
     background-image: none !important;
     box-shadow: none !important;
@@ -612,7 +453,4 @@ body {
 #acceptBtn  { left: 63%; top: 8%; width: 14%; height: 82%; }
 #declineBtn { left: 79%; top: 8%; width: 14%; height: 82%; }
 
-.movement-pad,
-.decision-pad {
-    display: contents;
-}
+.movement-pad, .decision-pad { display: contents; }
