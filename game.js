@@ -133,7 +133,6 @@ function checkAllAssetsLoaded() {
         powerUpImages[1] = images['co'];
         powerUpImages[2] = images['sx'];
     }
-    // Only repaint if the game screen is actually visible
     const gamePanel = document.getElementById("activeGamePanel");
     if (gameStarted && !gameOver && gamePanel && gamePanel.classList.contains("active")) {
         requestAnimationFrame(repaintAll);
@@ -200,25 +199,21 @@ let p1 = new Player(1, "P1", "red");
 let p2 = new Player(4, "P2", "blue");
 
 // =============================================
-//  CANVAS — NO setTransform SCALING
-//  Everything is drawn in logical coords (0-600, 0-1080)
-//  and we use a single scaleX/scaleY multiplier per draw call.
+//  CANVAS — logical coords (0-600 × 0-1080)
+//  scaled to actual canvas pixel size per draw
 // =============================================
 const canvas = document.getElementById("gameCanvas");
 const g2d    = canvas.getContext("2d");
 
-// Logical design dimensions
 const LW = 600;
 const LH = 1080;
 
-// Call this before every repaintAll to get fresh scale factors
 function getScale() {
     const pw = canvas.width;
     const ph = canvas.height;
     return { sx: pw / LW, sy: ph / LH, pw, ph };
 }
 
-// Sync canvas pixel size to its CSS layout size
 function syncCanvas() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
@@ -228,7 +223,6 @@ function syncCanvas() {
     }
 }
 
-// Shorthand: convert logical x/y/w/h to pixel coords
 function px(x, sx) { return x * sx; }
 function py(y, sy) { return y * sy; }
 function pw(w, sx) { return w * sx; }
@@ -240,19 +234,18 @@ function ph(h, sy) { return h * sy; }
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-   if (id === "activeGamePanel") {
-    function waitForSize(attempts) {
-        if (window._setSizing) window._setSizing();
-        syncCanvas();
-        if ((canvas.width > 10 && canvas.height > 100) || attempts <= 0) {
-            repaintAll();
-        } else {
-            setTimeout(() => waitForSize(attempts - 1), 50);
+    if (id === "activeGamePanel") {
+        function waitForSize(attempts) {
+            if (window._setSizing) window._setSizing();
+            syncCanvas();
+            if ((canvas.width > 10 && canvas.height > 100) || attempts <= 0) {
+                repaintAll();
+            } else {
+                setTimeout(() => waitForSize(attempts - 1), 50);
+            }
         }
+        setTimeout(() => waitForSize(20), 30);
     }
-    setTimeout(() => waitForSize(20), 30);
-}
-
 }
 
 window.addEventListener("resize", () => {
@@ -261,7 +254,7 @@ window.addEventListener("resize", () => {
 });
 
 // =============================================
-//  PLAY BUTTON — wait for real canvas dimensions
+//  PLAY BUTTON
 // =============================================
 let playBtnCooldown = false;
 document.getElementById("playBtn").addEventListener("click", () => {
@@ -391,26 +384,46 @@ document.getElementById("powerUpCancelBtn").addEventListener("click", () => {
 });
 
 // =============================================
-//  RENDER ENGINE — all coords scaled per-call
+//  TEXT WRAP HELPER
+//  Breaks `text` into lines that fit within
+//  `maxWidth` pixels at the current font setting.
+// =============================================
+function wrapText(ctx, text, maxWidth) {
+    const words = text.split(" ");
+    const lines = [];
+    let line = "";
+    for (let i = 0; i < words.length; i++) {
+        const test = line ? line + " " + words[i] : words[i];
+        if (ctx.measureText(test).width > maxWidth && line) {
+            lines.push(line);
+            line = words[i];
+        } else {
+            line = test;
+        }
+    }
+    if (line) lines.push(line);
+    return lines;
+}
+
+// =============================================
+//  RENDER ENGINE
 // =============================================
 function repaintAll() {
     syncCanvas();
 
     const { sx, sy, pw: W, ph: H } = getScale();
 
-    // If canvas still has no size, retry next frame
     if (W === 0 || H === 0) {
         requestAnimationFrame(repaintAll);
         return;
     }
 
     g2d.save();
-    g2d.setTransform(1, 0, 0, 1, 0, 0); // identity — we scale coords manually
+    g2d.setTransform(1, 0, 0, 1, 0, 0);
     g2d.clearRect(0, 0, W, H);
     g2d.fillStyle = "#000";
     g2d.fillRect(0, 0, W, H);
 
-    // Background
     if (images.gameBg?.complete && images.gameBg.naturalWidth > 0)
         g2d.drawImage(images.gameBg,  0,      0,      600*sx, 1080*sy);
     if (images.island?.complete && images.island.naturalWidth > 0)
@@ -426,9 +439,10 @@ function repaintAll() {
     if (!isAnimating) {
         if (!systemMessage || systemMessage.includes("ROLL")) {
             if (isDecidingTurn) {
+                // ── LOWEST ROLL GOES FIRST ──
                 let pn = (rollingForPlayer === 1) ? "P1" : "P2";
                 if (!p1StartRoll && !p2StartRoll)
-                    systemMessage = pn + ": ROLL TO START";
+                    systemMessage = pn + ": ROLL (LOWEST GOES FIRST)";
                 else if (p1StartRoll > 0 && !p2StartRoll)
                     systemMessage = "P1 rolled " + p1StartRoll + ". P2 ROLL!";
                 else if (p2StartRoll > 0 && !p1StartRoll)
@@ -450,33 +464,61 @@ function repaintAll() {
     g2d.restore();
 }
 
+// =============================================
+//  INFO BOARD — with word-wrap so text stays
+//  inside the board borders at all screen sizes
+// =============================================
 function drawInfoBoard(sx, sy, message) {
-    const bx=60*sx, by=330*sy, bw=480*sx, bh=160*sy;
+    const bx = 60*sx, by = 330*sy, bw = 480*sx, bh = 160*sy;
+
     if (images.infoBoard?.complete && images.infoBoard.naturalWidth > 0) {
         g2d.drawImage(images.infoBoard, bx, by, bw, bh);
     } else {
         g2d.fillStyle = "rgba(0,0,0,0.82)";
         g2d.fillRect(bx, by, bw, bh);
     }
-    const lines = message.split("\n");
-    const baseSize = lines.length > 2 ? 15 : lines.length > 1 ? 18 : 22;
-    const scaledSize = Math.max(8, baseSize * Math.min(sx, sy));
-    const lineH = scaledSize * (lines.length > 2 ? 1.6 : 1.7);
+
+    // Horizontal padding inside the board (keeps text away from the edges)
+    const padX  = 28 * sx;
+    const maxTW = bw - padX * 2;
+
+    // Split on explicit newlines first
+    const rawLines = message.split("\n");
+
+    // Scale — slightly smaller base so wrapped lines still fit comfortably
+    const scale    = Math.min(sx, sy);
+    const baseSize = Math.max(8, 18 * scale);
+    const headSize = Math.max(9, 20 * scale);
+
     g2d.save();
-    g2d.textAlign = "center";
+    g2d.textAlign    = "center";
     g2d.textBaseline = "middle";
-    g2d.shadowColor = "rgba(0,0,0,0.95)";
-    g2d.shadowBlur = 5 * Math.min(sx, sy);
+    g2d.shadowColor  = "rgba(0,0,0,0.95)";
+    g2d.shadowBlur   = 4 * scale;
     g2d.shadowOffsetX = 2 * sx;
     g2d.shadowOffsetY = 2 * sy;
-    const totalTextH = lines.length * lineH;
-    let startY = by + (bh - totalTextH) / 2 + lineH / 2;
-    lines.forEach((line, i) => {
-        g2d.fillStyle = (i === 0) ? "#FFEE44" : "#F0E8C0";
-        const fs = Math.max(8, (i===0 ? baseSize+2 : baseSize) * Math.min(sx,sy));
+
+    // First pass: measure all wrapped lines so we can vertically centre them
+    const allLines = [];   // { text, isHeader }
+    rawLines.forEach((raw, i) => {
+        const fs = i === 0 ? headSize : baseSize;
         g2d.font = `bold ${fs}px 'Courier New', monospace`;
-        g2d.fillText(line, bx + bw/2, startY + i * lineH);
+        const wrapped = wrapText(g2d, raw, maxTW);
+        wrapped.forEach(l => allLines.push({ text: l, isHeader: i === 0 }));
     });
+
+    const lineH     = baseSize * 1.55;
+    const totalH    = allLines.length * lineH;
+    let   curY      = by + (bh - totalH) / 2 + lineH / 2;
+
+    allLines.forEach(({ text, isHeader }) => {
+        g2d.fillStyle = isHeader ? "#FFEE44" : "#F0E8C0";
+        const fs = isHeader ? headSize : baseSize;
+        g2d.font = `bold ${fs}px 'Courier New', monospace`;
+        g2d.fillText(text, bx + bw / 2, curY);
+        curY += lineH;
+    });
+
     g2d.restore();
 }
 
@@ -676,41 +718,80 @@ function startDiceAnimation() {
     },80);
 }
 
+// =============================================
+//  FINALIZE ROLL
+//  Rule: LOWEST die value goes first.
+//  Tie → re-roll. Round > 1: rolling a 1
+//  immediately wins the go-first right.
+// =============================================
 function finalizeRoll() {
     if (isDecidingTurn) {
-        let rv=Math.floor(Math.random()*6)+1;
-        let or=(rollingForPlayer===1)?roundP1:roundP2;
-        if (rollingForPlayer===1) {
-            p1StartRoll=rv;
-            if(or>1&&rv===1){p2StartRoll=-1;systemMessage="🎲 P1 rolled 1 in Round "+or+"! Moving first.";}
-            else if(p2StartRoll===0) rollingForPlayer=2;
+        let rv = Math.floor(Math.random() * 6) + 1;
+        let or = (rollingForPlayer === 1) ? roundP1 : roundP2;
+
+        if (rollingForPlayer === 1) {
+            p1StartRoll = rv;
+            // In rounds after the first, rolling a 1 guarantees going first
+            if (or > 1 && rv === 1) {
+                p2StartRoll = -1; // sentinel: P1 wins by rolling 1
+                systemMessage = "🎲 P1 rolled 1 in Round " + or + "! P1 goes first.";
+            } else if (p2StartRoll === 0) {
+                // P2 hasn't rolled yet
+                rollingForPlayer = 2;
+            }
         } else {
-            p2StartRoll=rv;
-            if(or>1&&rv===1){p1StartRoll=-1;systemMessage="🎲 P2 rolled 1 in Round "+or+"! Moving first.";}
-            else if(p1StartRoll===0) rollingForPlayer=1;
-        }
-        if (p1StartRoll!==0&&p2StartRoll!==0) {
-            if(p1StartRoll===p2StartRoll&&p1StartRoll>0){
-                p1StartRoll=0;p2StartRoll=0;
-                rollingForPlayer=(p1.timeLeft>=p2.timeLeft)?1:2;
-            } else {
-                currentTurn=(p1StartRoll<p2StartRoll)?1:2;
-                isDecidingTurn=false;
-                let cr=(currentTurn===1)?roundP1:roundP2;
-                if(cr%3===0) triggerPowerUpIntegrated();
-                else systemMessage="Player "+currentTurn+" moves first! Roll Operation.";
+            p2StartRoll = rv;
+            if (or > 1 && rv === 1) {
+                p1StartRoll = -1; // sentinel: P2 wins by rolling 1
+                systemMessage = "🎲 P2 rolled 1 in Round " + or + "! P2 goes first.";
+            } else if (p1StartRoll === 0) {
+                rollingForPlayer = 1;
             }
         }
+
+        // Both players have now rolled — determine who goes first
+        if (p1StartRoll !== 0 && p2StartRoll !== 0) {
+            if (p1StartRoll === p2StartRoll && p1StartRoll > 0) {
+                // Tie: re-roll (player with more time rolls first to keep it fair)
+                p1StartRoll = 0; p2StartRoll = 0;
+                rollingForPlayer = (p1.timeLeft >= p2.timeLeft) ? 1 : 2;
+                systemMessage = "🎲 TIE! Re-roll — lowest goes first.";
+            } else {
+                // Lowest roll goes first (sentinels -1 are treated as lowest possible)
+                const p1Wins = (p1StartRoll === -1) ||
+                               (p2StartRoll !== -1 && p1StartRoll < p2StartRoll);
+                currentTurn = p1Wins ? 1 : 2;
+                isDecidingTurn = false;
+
+                const winner  = p1Wins ? "P1" : "P2";
+                const loser   = p1Wins ? "P2" : "P1";
+                const winRoll = p1Wins ? p1StartRoll : p2StartRoll;
+                const losRoll = p1Wins ? p2StartRoll : p1StartRoll;
+                const rollStr = (winRoll === -1 || losRoll === -1)
+                    ? ""
+                    : " (" + winRoll + " vs " + losRoll + ")";
+
+                let cr = (currentTurn === 1) ? roundP1 : roundP2;
+                if (cr % 3 === 0) {
+                    triggerPowerUpIntegrated();
+                } else {
+                    systemMessage = winner + " rolled lowest" + rollStr + "! Roll Operation.";
+                }
+            }
+        }
+
     } else {
-        let or=Math.floor(Math.random()*2);
-        currentOperation=(or===0)?"+":"-";
-        currentDiceImg=opDiceImages[or];
-        needsToRollOp=false;
-        systemMessage="";
-        if(isTeleportPending) executePendingTeleport();
-        else { if(currentTurn===1) p1.startTimer(); else p2.startTimer(); }
+        // Roll for the arithmetic operation (+ or −)
+        let or = Math.floor(Math.random() * 2);
+        currentOperation = (or === 0) ? "+" : "-";
+        currentDiceImg = opDiceImages[or];
+        needsToRollOp = false;
+        systemMessage = "";
+        if (isTeleportPending) executePendingTeleport();
+        else { if (currentTurn === 1) p1.startTimer(); else p2.startTimer(); }
     }
-    isAnimating=false;
+
+    isAnimating = false;
     setRollButtonsDisabled(true);
     repaintAll();
 }
@@ -746,9 +827,9 @@ function startPowerUpAnimation() {
                 waitingForPowerUpChoice=false;
                 powerUpRecipient=null; preRolledPowerUp=""; currentDiceImg=null;
             } else {
-                if(preRolledPowerUp==="Teleport")          currentDiceImg=images['tp'];
+                if(preRolledPowerUp==="Teleport")              currentDiceImg=images['tp'];
                 else if(preRolledPowerUp==="Operation Changer") currentDiceImg=images['co'];
-                else if(preRolledPowerUp==="Double")       currentDiceImg=images['sx'];
+                else if(preRolledPowerUp==="Double")            currentDiceImg=images['sx'];
                 systemMessage=powerUpRecipient.name+" moves first in Round "+ar+"!\nRolled: "+preRolledPowerUp+"\nPress Y to accept, N to decline.";
                 waitingForPowerUpChoice=true;
             }
@@ -848,11 +929,11 @@ function handleMovement(key) {
 
 function applyRandomPowerUp(rec) {
     waitingForPowerUpChoice=false;
-    if(preRolledPowerUp==="Teleport")          {showTeleportPanel(rec);return;}
-    if(preRolledPowerUp==="Operation Changer") {showOperationPanel(rec);return;}
+    if(preRolledPowerUp==="Teleport")           {showTeleportPanel(rec);return;}
+    if(preRolledPowerUp==="Operation Changer")  {showOperationPanel(rec);return;}
     if(preRolledPowerUp==="Double"){
         if(rec===p1) p1HasDoubleTile=true; else p2HasDoubleTile=true;
-        systemMessage="🎉 "+rec.name+" accepted DOUBLE! Next tile value doubled. Roll operation.";
+        systemMessage="🎉 "+rec.name+" accepted DOUBLE!\nNext tile value doubled. Roll operation.";
     }
     preRolledPowerUp=""; powerUpRecipient=null; currentDiceImg=null;
     repaintAll();
@@ -880,7 +961,7 @@ function handleTeleportChoice(choice) {
     if(choice==="L"){dir=0;dn="LEFT";}
     else if(choice==="R"){dir=2;dn="RIGHT";}
     pendingTeleportDirection=dir; isTeleportPending=true; currentDiceImg=null;
-    systemMessage="🌀 Teleport "+dn+" locked! Click 'ROLL' for your operation.";
+    systemMessage="🌀 Teleport "+dn+" locked!\nClick 'ROLL' for your operation.";
     preRolledPowerUp=""; powerUpRecipient=null;
     hidePowerUpPanel(); repaintAll();
 }
@@ -889,7 +970,7 @@ function handleOperatorChoice(choice) {
     if(!["+","-","*","/"].includes(choice)) choice="+";
     currentOperation=choice; currentDiceImg=null; needsToRollOp=false;
     waitingForPowerUpChoice=false; preRolledPowerUp=""; powerUpRecipient=null;
-    systemMessage="Operation changed to "+currentOperation+". Use arrow keys to move.";
+    systemMessage="Operation changed to "+currentOperation+".\nUse arrow keys to move.";
     hidePowerUpPanel();
     if(currentTurn===1) p1.startTimer(); else p2.startTimer();
     repaintAll();
