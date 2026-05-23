@@ -267,39 +267,30 @@ body {
 }
 
 #pauseMenuCard {
-    width: 400px; height: 500px;
+    /* Responsive: shrinks on mobile, capped on desktop */
+    width: min(80vw, 400px);
+    height: calc(min(80vw, 400px) * 500 / 400);
     position: relative;
     margin: auto;
     background: url('assets/pausebg.png') no-repeat center center;
     background-size: 100% 100%;
 }
 
-@media (max-width: 768px) {
-    #pauseMenuCard {
-        width: 80vw;
-        height: calc(80vw * 500 / 400);
-    }
-
-    #resumeBtn {
-        width: 35%; height: 24%;
-        left: 32.5%; top: 16%;
-    }
-
-    #quitBtn {
-        width: 35%; height: 24%;
-        left: 32.5%; top: 58%;
-    }
-}
-
+/* All button positions/sizes as % of the card so they
+   scale correctly at every screen size */
 #resumeBtn {
-    width: 150px; height: 150px;
-    left: 125px; top: 90px;
+    width: 37.5%;       /* 150/400 */
+    height: 30%;        /* 150/500 */
+    left: 31.25%;       /* (400-150)/2 / 400 */
+    top: 16%;           /* 80/500 — sits in upper half */
     background-image: url('assets/playbutton.png');
 }
 
 #quitBtn {
-    width: 150px; height: 150px;
-    left: 125px; top: 240px;
+    width: 37.5%;       /* 150/400 */
+    height: 30%;        /* 150/500 */
+    left: 31.25%;       /* centred */
+    top: 52%;           /* below resume with gap */
     background-image: url('assets/home.png');
 }
 
