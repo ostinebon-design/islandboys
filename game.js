@@ -540,7 +540,8 @@ function startPowerUpAnimation() {
 // =============================================
 function togglePause() {
     isPaused=true; p1.stopTimer(); p2.stopTimer();
-    document.getElementById("pauseOverlay").style.display="block";
+    const overlay = document.getElementById("pauseOverlay");
+    overlay.style.display = "flex";
     // intentionally no repaintAll() — canvas stays frozen under the modal
 }
 
