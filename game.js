@@ -165,6 +165,22 @@ document.getElementById("rollBtn").addEventListener("click", () => {
     }
 });
 
+document.getElementById("rollBtnMobile").addEventListener("click", () => {
+    if (!gameOver && !isPaused && !waitingForPowerUpChoice) {
+        if (waitingToRollPowerUp) {
+            startPowerUpAnimation();
+        } else if (needsToRollOp) {
+            startDiceAnimation();
+        }
+    }
+});
+
+function setRollButtonsDisabled(enabled) {
+    document.getElementById("rollBtn").disabled = !enabled;
+    const mobileRoll = document.getElementById("rollBtnMobile");
+    if (mobileRoll) mobileRoll.disabled = !enabled;
+}
+
 window.addEventListener("keydown", (e) => {
     if (!gameStarted || gameOver || isPaused || isAnimating) return;
 
@@ -190,6 +206,45 @@ window.addEventListener("keydown", (e) => {
     if (isDecidingTurn || needsToRollOp) return;
     handleMovement(key);
     repaintAll();
+});
+
+// --- MOBILE CONTROL BUTTON HANDLERS ---
+document.getElementById("moveUpBtn").addEventListener("click", () => {
+    if (!gameStarted || gameOver || isPaused || isAnimating) return;
+    if (isDecidingTurn || needsToRollOp) return;
+    handleMovement("ArrowUp");
+    repaintAll();
+});
+
+document.getElementById("moveLeftBtn").addEventListener("click", () => {
+    if (!gameStarted || gameOver || isPaused || isAnimating) return;
+    if (isDecidingTurn || needsToRollOp) return;
+    handleMovement("ArrowLeft");
+    repaintAll();
+});
+
+document.getElementById("moveRightBtn").addEventListener("click", () => {
+    if (!gameStarted || gameOver || isPaused || isAnimating) return;
+    if (isDecidingTurn || needsToRollOp) return;
+    handleMovement("ArrowRight");
+    repaintAll();
+});
+
+document.getElementById("acceptBtn").addEventListener("click", () => {
+    if (waitingForPowerUpChoice && powerUpRecipient) {
+        applyRandomPowerUp(powerUpRecipient);
+    }
+});
+
+document.getElementById("declineBtn").addEventListener("click", () => {
+    if (waitingForPowerUpChoice && powerUpRecipient) {
+        systemMessage = "💨 " + powerUpRecipient.name + " DECLINED. Roll Operation!";
+        waitingForPowerUpChoice = false;
+        powerUpRecipient = null;
+        preRolledPowerUp = "";
+        currentDiceImg = null;
+        repaintAll();
+    }
 });
 
 // --- CORE RENDERING ENGINE CALCULATIONS MAPS ---
@@ -520,7 +575,7 @@ function resetGame() {
 
 function startDiceAnimation() {
 
-    document.getElementById("rollBtn").disabled = true;
+    setRollButtonsDisabled(false);
 
     isAnimating = true;
     animationFrames = 0;
@@ -664,7 +719,7 @@ function finalizeRoll() {
 
     isAnimating = false;
 
-    document.getElementById("rollBtn").disabled = false;
+    setRollButtonsDisabled(true);
 
     repaintAll();
 }
@@ -714,7 +769,7 @@ function startPowerUpAnimation() {
     isRollingPowerUp = true;
     isAnimating = true;
 
-    document.getElementById("rollBtn").disabled = true;
+    setRollButtonsDisabled(false);
 
     let frames = 0;
 
@@ -740,7 +795,7 @@ function startPowerUpAnimation() {
             isRollingPowerUp = false;
             isAnimating = false;
 
-            document.getElementById("rollBtn").disabled = false;
+            setRollButtonsDisabled(true);
 
             if (preRolledPowerUp === "No Power Up") {
                 systemMessage = "👑 " + powerUpRecipient.name + " moves first in Round " + activeRound + "!\n💨 NO POWER UP. Roll Operation to continue.";
