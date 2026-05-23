@@ -191,22 +191,23 @@ body {
 #tutBackBtn {
     width: 100px;
     height: 100px;
-    left: 250px;
-    top: 105px;
+    left: 20px;
+    top: 20px;
+    z-index: 20;
     background-image: url('assets/home.png');
 }
 
 @media (max-width: 768px) {
     #tutBackBtn {
-        width: 14vw;
-        height: 14vw;
-        /* Center it at the top of the tutorial screen */
-        left: 50%;
+        width: 16vw;
+        height: 16vw;
+        left: auto;
+        right: 4vw;
         top: 3vh;
-        transform: translateX(-50%);
+        transform: none;
     }
-    #tutBackBtn:hover  { transform: translateX(-50%) translateY(-2px) scale(1.04); }
-    #tutBackBtn:active { transform: translateX(-50%) translateY(0px)  scale(0.98); }
+    #tutBackBtn:hover  { transform: translateY(-2px) scale(1.04); }
+    #tutBackBtn:active { transform: translateY(0px)  scale(0.98); }
 }
 
 #instructionCard {
@@ -237,6 +238,7 @@ body {
     width: 100%;
     height: 100%;
     background: #000;
+    overflow: hidden;
 }
 
 /* Mobile: flex column so canvas + controller stack cleanly */
@@ -253,8 +255,8 @@ body {
         left: auto !important;
         width: 100% !important;
         height: auto !important;
-        flex: 1 1 auto;      /* fill all remaining vertical space */
-        min-height: 0;       /* allow flex shrink so controller isn't pushed off */
+        flex: 1 1 auto;
+        min-height: 0;
         display: block;
         z-index: 1;
     }
@@ -319,20 +321,18 @@ body {
 .overlay {
     display: none;
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10;
+    inset: 0;
+    z-index: 110;
     background-color: rgba(0, 0, 0, 0.7);
+    align-items: center;
+    justify-content: center;
 }
 
 #pauseMenuCard {
     width: 400px;
     height: 500px;
-    position: absolute;
-    left: 100px;
-    top: 290px;
+    position: relative;
+    margin: auto;
     background: url('assets/pausebg.png') no-repeat center center;
     background-size: 100% 100%;
 }
@@ -342,23 +342,20 @@ body {
     #pauseMenuCard {
         width: 80vw;
         height: calc(80vw * 500 / 400);  /* preserve 400:500 aspect */
-        left: 10vw;
-        top: 50%;
-        transform: translateY(-50%);
     }
 
     #resumeBtn {
-        width: 37%;
-        height: 30%;
+        width: 38%;
+        height: 28%;
         left: 31%;
         top: 18%;
     }
 
     #quitBtn {
-        width: 37%;
-        height: 30%;
+        width: 38%;
+        height: 28%;
         left: 31%;
-        top: 52%;
+        top: 54%;
     }
 }
 
