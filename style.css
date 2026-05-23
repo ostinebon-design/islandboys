@@ -359,7 +359,7 @@ body {
 #gamePauseBtn {
     width: 50px;
     height: 50px;
-    left: 530px;   /* center of the 180px P2 board starting at x=405 */
+    left: 470px;   /* center of the 180px P2 board starting at x=405 */
     top: 115px;    /* 30px top + 80px board height + 5px gap */
     background-image: url('assets/pause.png');
     z-index: 30;
