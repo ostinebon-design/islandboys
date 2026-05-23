@@ -31,12 +31,7 @@ body {
         max-height: 100vh;
     }
 
-    #gameCanvas {
-        width: 100% !important;
-        /* Leave room at bottom for the controller bar */
-        height: calc(100vh - 302px) !important;
-        display: block;
-    }
+    /* Canvas sizing is now handled inside #activeGamePanel flex rules below */
 }
 
 .screen {
@@ -101,7 +96,7 @@ body {
     background: rgba(255, 233, 122, 0.35);
 }
 
-/* BACKGROUND LAYOUT IMAGES SPECIFICATIONS MATCHING ORIGINAL CODEPATHS */
+/* BACKGROUND LAYOUT IMAGES */
 #homePanel {
     background: url('assets/homebg.jpg') no-repeat center center;
     background-size: 100% 100%;
@@ -112,7 +107,7 @@ body {
     background-size: 100% 100%;
 }
 
-/* CORE EVENT TRIGGER BUTTON STYLING CONFIGURATIONS */
+/* CORE EVENT TRIGGER BUTTON STYLING */
 .action-trigger {
     position: absolute;
     border: none;
@@ -159,27 +154,19 @@ body {
     background-image: url('assets/back.png');
 }
 
-/* Mobile: reposition home buttons using % so they scale to any phone screen */
+/* Mobile: reposition home buttons */
 @media (max-width: 768px) {
     #playBtn {
-        /* Center horizontally, sit at ~68% down the screen */
         width: 26vw;
         height: 26vw;
         left: 50%;
         top: 66%;
         transform: translateX(-50%);
     }
-
-    #playBtn:hover {
-        transform: translateX(-50%) translateY(-2px) scale(1.04);
-    }
-
-    #playBtn:active {
-        transform: translateX(-50%) translateY(0px) scale(0.98);
-    }
+    #playBtn:hover  { transform: translateX(-50%) translateY(-2px) scale(1.04); }
+    #playBtn:active { transform: translateX(-50%) translateY(0px)  scale(0.98); }
 
     #homeTutBtn {
-        /* Top-right corner, scaled to vw */
         width: 9vw;
         height: 9vw;
         left: auto;
@@ -188,29 +175,38 @@ body {
     }
 
     #homeExitBtn {
-        /* Centered below play button, at ~82% down */
         width: 16vw;
         height: 11vw;
         left: 50%;
         top: 82%;
         transform: translateX(-50%);
     }
-
-    #homeExitBtn:hover {
-        transform: translateX(-50%) translateY(-2px) scale(1.04);
-    }
-
-    #homeExitBtn:active {
-        transform: translateX(-50%) translateY(0px) scale(0.98);
-    }
+    #homeExitBtn:hover  { transform: translateX(-50%) translateY(-2px) scale(1.04); }
+    #homeExitBtn:active { transform: translateX(-50%) translateY(0px)  scale(0.98); }
 }
 
+/* =============================================
+   TUTORIAL — home button (desktop + mobile fix)
+   ============================================= */
 #tutBackBtn {
     width: 100px;
     height: 100px;
     left: 250px;
     top: 105px;
     background-image: url('assets/home.png');
+}
+
+@media (max-width: 768px) {
+    #tutBackBtn {
+        width: 14vw;
+        height: 14vw;
+        /* Center it at the top of the tutorial screen */
+        left: 50%;
+        top: 3vh;
+        transform: translateX(-50%);
+    }
+    #tutBackBtn:hover  { transform: translateX(-50%) translateY(-2px) scale(1.04); }
+    #tutBackBtn:active { transform: translateX(-50%) translateY(0px)  scale(0.98); }
 }
 
 #instructionCard {
@@ -229,111 +225,39 @@ body {
     overflow: auto;
 }
 
-#instructionCard::before {
-    content: "";
-    position: absolute;
-    left: 18px;
-    right: 18px;
-    top: 18px;
-    bottom: 18px;
-    border: 1px dashed rgba(255, 255, 255, 0.18);
-    border-radius: 28px;
-    pointer-events: none;
-}
-
-#instructionCard .card-header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 18px;
-}
-
-#instructionCard .card-header h2 {
-    margin: 0;
-    font-size: 32px;
-    letter-spacing: 0.9px;
-    text-align: center;
-    font-family: 'Lucida Handwriting', cursive;
-    color: #fff7a8;
-    text-shadow: 0 0 12px rgba(255, 222, 95, 0.55);
-}
-
-#instructionCard .palm-left,
-#instructionCard .palm-right {
-    font-size: 26px;
-}
-
-#instructionCard .subtitle {
-    margin: 0 0 20px;
-    font-size: 16px;
-    color: #dbe4ff;
-    text-align: center;
-    letter-spacing: 0.4px;
-}
-
-#instructionCard .instruction-block {
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 18px 20px;
-}
-
-#instructionCard p,
-#instructionCard ul {
-    margin: 12px 0;
-    line-height: 1.7;
-}
-
-#instructionCard ul {
-    padding-left: 24px;
-}
-
-#instructionCard li {
-    margin-bottom: 12px;
-    position: relative;
-    padding-left: 26px;
-    color: #f4efc2;
-}
-
-#instructionCard li::before {
-    content: "🌴";
-    position: absolute;
-    left: 0;
-    top: 1px;
-}
-
-#instructionCard .hint {
-    margin-top: 18px;
-    font-style: italic;
-    color: #c6ddff;
-}
-
-#instructionCard .guide-foot {
-    margin-top: 20px;
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    align-items: center;
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #faf1cc;
-    font-size: 14px;
-}
-
-#instructionCard .guide-foot span:first-child {
-    font-weight: 700;
-    color: #fff1a0;
-}
-
 /* =============================================
    GAME SCREEN — CANVAS + OVERLAID BUTTONS
-   Canvas sits at z-index 1; UI buttons at z-index 5+
+
+   FIX: On mobile the panel becomes a flex column.
+   Canvas grows to fill all space above controller.
+   This eliminates the gap / bleed-through glitch.
    ============================================= */
 #activeGamePanel {
     position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+/* Mobile: flex column so canvas + controller stack cleanly */
+@media (max-width: 768px) {
+    #activeGamePanel {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    #gameCanvas {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        flex: 1 1 auto;      /* fill all remaining vertical space */
+        min-height: 0;       /* allow flex shrink so controller isn't pushed off */
+        display: block;
+        z-index: 1;
+    }
 }
 
 #gameCanvas {
@@ -355,12 +279,17 @@ body {
     transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Pause button — below P2 scoreboard (P2 board: left=405 w=180 h=80 top=30) */
+/* =============================================
+   PAUSE BUTTON — desktop + mobile fix
+
+   Desktop: absolute pixel offsets matching canvas coords.
+   Mobile:  vw-relative so it scales with the canvas width.
+   ============================================= */
 #gamePauseBtn {
     width: 50px;
     height: 50px;
-    left: 470px;   /* center of the 180px P2 board starting at x=405 */
-    top: 115px;    /* 30px top + 80px board height + 5px gap */
+    left: 470px;
+    top: 115px;
     background-image: url('assets/pause.png');
     z-index: 30;
     transition: transform 0.15s ease, filter 0.15s ease;
@@ -368,11 +297,16 @@ body {
 
 @media (max-width: 768px) {
     #gamePauseBtn {
-        width: 44px;
-        height: 44px;
-        /* Scale proportionally: canvas is 100vw wide vs 600px desktop */
-        left: calc(100vw * 470 / 600);
-        top: calc(100vw * 115 / 600);
+        /* Position is relative to the canvas element now (flex child).
+           We keep it absolutely positioned inside #activeGamePanel
+           using vw percentages that mirror the 470/600 and 115/1080
+           desktop ratios. */
+        position: absolute;
+        left:   calc(100vw * 470 / 600);
+        /* Canvas visible height ≈ 100vh minus controller height */
+        top:    calc((100vh - min(calc(100vw / 1.988), 302px)) * 115 / 1080);
+        width:  calc(100vw * 50 / 600);
+        height: calc(100vw * 50 / 600);
         z-index: 30;
     }
 
@@ -381,7 +315,7 @@ body {
     }
 }
 
-/* SUSPENSION MENU MODAL GRAPHICS MANAGEMENT OVERLAYS */
+/* SUSPENSION MENU MODAL */
 .overlay {
     display: none;
     position: absolute;
@@ -401,6 +335,31 @@ body {
     top: 290px;
     background: url('assets/pausebg.png') no-repeat center center;
     background-size: 100% 100%;
+}
+
+/* On mobile, center and scale the pause card */
+@media (max-width: 768px) {
+    #pauseMenuCard {
+        width: 80vw;
+        height: calc(80vw * 500 / 400);  /* preserve 400:500 aspect */
+        left: 10vw;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    #resumeBtn {
+        width: 37%;
+        height: 30%;
+        left: 31%;
+        top: 18%;
+    }
+
+    #quitBtn {
+        width: 37%;
+        height: 30%;
+        left: 31%;
+        top: 52%;
+    }
 }
 
 #resumeBtn {
@@ -493,11 +452,7 @@ body {
     height: 76px;
     margin: 0 auto 12px;
     background: radial-gradient(circle at 38% 32%,
-        #9a8a70 0%,
-        #7a6a50 35%,
-        #5a4a30 65%,
-        #3a2a15 100%
-    );
+        #9a8a70 0%, #7a6a50 35%, #5a4a30 65%, #3a2a15 100%);
     border-radius: 50%;
     border: 3px solid #aa9060;
     box-shadow:
@@ -511,9 +466,7 @@ body {
     color: #d8c890;
     font-weight: 900;
     font-family: 'Courier New', monospace;
-    text-shadow:
-        0 2px 6px rgba(0, 0, 0, 0.7),
-        0 0 12px rgba(200, 170, 80, 0.4);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7), 0 0 12px rgba(200, 170, 80, 0.4);
 }
 
 .powerup-label {
@@ -539,13 +492,8 @@ body {
     justify-items: stretch;
 }
 
-.teleport-buttons {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.operator-buttons {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-}
+.teleport-buttons  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.operator-buttons  { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 .powerup-btn {
     width: 100%;
@@ -553,20 +501,10 @@ body {
     border: 2px solid #7a5030;
     border-radius: 8px;
     background-image:
-        repeating-linear-gradient(
-            88deg,
-            transparent,
-            transparent 16px,
-            rgba(0, 0, 0, 0.045) 16px,
-            rgba(0, 0, 0, 0.045) 17px
-        ),
-        linear-gradient(180deg,
-            #dac09a 0%,
-            #c4a070 18%,
-            #b08050 50%,
-            #9a6e3a 82%,
-            #8a5e2a 100%
-        );
+        repeating-linear-gradient(88deg, transparent, transparent 16px,
+            rgba(0,0,0,0.045) 16px, rgba(0,0,0,0.045) 17px),
+        linear-gradient(180deg, #dac09a 0%, #c4a070 18%, #b08050 50%,
+            #9a6e3a 82%, #8a5e2a 100%);
     color: #2c1810;
     font-size: 16px;
     font-weight: 900;
@@ -574,64 +512,51 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.08em;
     cursor: pointer;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.38);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.38);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.42),
-        inset 0 -2px 4px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255,255,255,0.42),
+        inset 0 -2px 4px rgba(0,0,0,0.28),
         0 5px 0 #5a3a18,
-        0 6px 10px rgba(0, 0, 0, 0.45);
-    transition: transform 0.08s ease, box-shadow 0.08s ease, background-image 0.08s ease;
+        0 6px 10px rgba(0,0,0,0.45);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 
 .powerup-btn:hover {
     background-image:
-        repeating-linear-gradient(
-            88deg,
-            transparent,
-            transparent 16px,
-            rgba(0, 0, 0, 0.045) 16px,
-            rgba(0, 0, 0, 0.045) 17px
-        ),
-        linear-gradient(180deg,
-            #ead4b0 0%,
-            #d4b080 18%,
-            #c09060 50%,
-            #aa7e4a 82%,
-            #9a6e3a 100%
-        );
+        repeating-linear-gradient(88deg, transparent, transparent 16px,
+            rgba(0,0,0,0.045) 16px, rgba(0,0,0,0.045) 17px),
+        linear-gradient(180deg, #ead4b0 0%, #d4b080 18%, #c09060 50%,
+            #aa7e4a 82%, #9a6e3a 100%);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.5),
-        inset 0 -2px 4px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255,255,255,0.5),
+        inset 0 -2px 4px rgba(0,0,0,0.22),
         0 6px 0 #5a3a18,
-        0 7px 12px rgba(0, 0, 0, 0.5);
+        0 7px 12px rgba(0,0,0,0.5);
 }
 
 .powerup-btn:active {
     transform: translateY(4px);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.32),
-        inset 0 -1px 3px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255,255,255,0.32),
+        inset 0 -1px 3px rgba(0,0,0,0.22),
         0 1px 0 #5a3a18,
-        0 2px 5px rgba(0, 0, 0, 0.35);
+        0 2px 5px rgba(0,0,0,0.35);
 }
 
-.panel-cancel-btn {
-    display: none;
-}
+.panel-cancel-btn { display: none; }
 
 /* =============================================
    MOBILE CONTROLLER — controller.png aligned
-   Image native size: 2000×1006 (ratio ~1.988:1)
-   Controller bar sits at the very bottom.
-   All 6 hit-zone buttons are absolute inside it.
+   On mobile the container is a flex child so
+   position:relative keeps it in normal flow.
    ============================================= */
 .mobile-controls-container {
     display: none;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    /* Preserve 2000:1006 ratio */
+    /* flex child — let the flow position it */
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
     width: 100%;
     height: calc(100vw / 1.988);
     max-height: 302px;
@@ -642,6 +567,7 @@ body {
     border: none;
     box-shadow: none;
     z-index: 25;
+    flex-shrink: 0;   /* never shrink — canvas takes the slack */
 }
 
 @media (max-width: 768px) {
@@ -650,11 +576,7 @@ body {
     }
 }
 
-/* -----------------------------------------------
-   Hit-zone buttons — transparent overlays that
-   sit exactly on top of each artwork button.
-   Percentages are relative to the container box.
-   ----------------------------------------------- */
+/* Hit-zone buttons — transparent overlays */
 .mobile-controls-container button {
     position: absolute;
     background: transparent;
@@ -662,7 +584,7 @@ body {
     cursor: pointer;
     color: transparent;
     font-size: 0;
-    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.15);
+    -webkit-tap-highlight-color: rgba(255,255,255,0.15);
     border-radius: 8px;
     transition: background 0.1s;
     padding: 0;
@@ -670,34 +592,13 @@ body {
 }
 
 .mobile-controls-container button:active {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255,255,255,0.2);
 }
 
-/* ▲ UP  — artwork is the top button of the d-pad, left cluster */
-#moveUpBtn {
-    left: 13%;
-    top: 5%;
-    width: 16%;
-    height: 40%;
-}
+#moveUpBtn    { left: 13%; top: 5%;  width: 16%; height: 40%; }
+#moveLeftBtn  { left: 4%;  top: 48%; width: 16%; height: 40%; }
+#moveRightBtn { left: 23%; top: 48%; width: 16%; height: 40%; }
 
-/* ◀ LEFT */
-#moveLeftBtn {
-    left: 4%;
-    top: 48%;
-    width: 16%;
-    height: 40%;
-}
-
-/* ▶ RIGHT */
-#moveRightBtn {
-    left: 23%;
-    top: 48%;
-    width: 16%;
-    height: 40%;
-}
-
-/* ROLL — wide pill button in the centre */
 #rollBtnMobile {
     left: 38%;
     top: 8%;
@@ -709,23 +610,9 @@ body {
 }
 #rollBtnMobile:hover { transform: none; }
 
-/* Y (accept) */
-#acceptBtn {
-    left: 63%;
-    top: 8%;
-    width: 14%;
-    height: 82%;
-}
+#acceptBtn  { left: 63%; top: 8%; width: 14%; height: 82%; }
+#declineBtn { left: 79%; top: 8%; width: 14%; height: 82%; }
 
-/* N (decline) */
-#declineBtn {
-    left: 79%;
-    top: 8%;
-    width: 14%;
-    height: 82%;
-}
-
-/* Wrapper divs have no visual box */
 .movement-pad,
 .decision-pad {
     display: contents;
