@@ -166,10 +166,40 @@ let p2 = new Player(4, "P2", "blue");
 const canvas = document.getElementById("gameCanvas");
 const g2d = canvas.getContext("2d");
 
+// =============================================
+//  MOBILE CANVAS SCALING
+//  The canvas HTML attribute is always 600×1080
+//  (the "design resolution"). On mobile the CSS
+//  shrinks the element, so we re-stamp the canvas
+//  buffer to match the CSS pixel size and apply a
+//  uniform scale transform so every draw call uses
+//  the original 600×1080 coordinate space.
+// =============================================
+function syncCanvasResolution() {
+    const cssW = canvas.clientWidth;
+    const cssH = canvas.clientHeight;
+    if (canvas.width !== cssW || canvas.height !== cssH) {
+        canvas.width  = cssW;
+        canvas.height = cssH;
+    }
+}
+
+function getScale() {
+    return {
+        x: canvas.width  / 600,
+        y: canvas.height / 1080
+    };
+}
+
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
 }
+
+// Recalc canvas size whenever the window resizes (orientation change, etc.)
+window.addEventListener("resize", () => {
+    if (gameStarted && !gameOver) repaintAll();
+});
 
 // --- EVENT MANAGEMENT TRIGGERS ---
 document.getElementById("playBtn").addEventListener("click", () => {
@@ -316,26 +346,40 @@ document.getElementById("powerUpCancelBtn").addEventListener("click", () => {
     }
 });
 
-// --- CORE RENDERING ENGINE CALCULATIONS MAPS ---
+// =============================================
+//  CORE RENDERING ENGINE
+//  Every repaintAll() call:
+//   1. Syncs the canvas buffer to CSS display size
+//   2. Applies a uniform scale so all draw calls
+//      work in the original 600×1080 space
+// =============================================
 function repaintAll() {
-    g2d.clearRect(0, 0, canvas.width, canvas.height);
+    // Step 1 — match canvas buffer to its CSS size
+    syncCanvasResolution();
+
+    // Step 2 — reset transform then apply scale
+    const sc = getScale();
+    g2d.setTransform(sc.x, 0, 0, sc.y, 0, 0);
+
+    // Step 3 — clear in logical (600×1080) coords
+    g2d.clearRect(0, 0, 600, 1080);
 
     g2d.fillStyle = "#000000";
-    g2d.fillRect(0, 0, canvas.width, canvas.height);
+    g2d.fillRect(0, 0, 600, 1080);
 
     if (images.gameBg && images.gameBg.complete) {
-        g2d.drawImage(images.gameBg, 0, 0, canvas.width, canvas.height);
+        g2d.drawImage(images.gameBg, 0, 0, 600, 1080);
     }
     if (images.island && images.island.complete) {
-        g2d.drawImage(images.island, (canvas.width - 450) / 2, 0, 450, 280);
+        g2d.drawImage(images.island, (600 - 450) / 2, 0, 450, 280);
     }
     if (images.heli && images.heli.complete) {
-        g2d.drawImage(images.heli, (canvas.width / 2) - 100, 100, 200, 100);
+        g2d.drawImage(images.heli, (600 / 2) - 100, 100, 200, 100);
     }
 
-    drawTargetSign(g2d, (canvas.width / 2) - 60, 195, String(targetGoal));
+    drawTargetSign(g2d, (600 / 2) - 60, 195, String(targetGoal));
     let displayRound = (currentTurn === 1) ? roundP1 : roundP2;
-    drawRoundSign(g2d, (canvas.width / 2) - 60, 250, "ROUND " + displayRound);
+    drawRoundSign(g2d, (600 / 2) - 60, 250, "ROUND " + displayRound);
 
     renderGrid(g2d);
 
@@ -361,18 +405,18 @@ function repaintAll() {
                 let lines = systemMessage.split("\n");
                 let startY = 365;
                 lines.forEach(line => {
-                    g2d.fillText(line, (canvas.width - g2d.measureText(line).width) / 2, startY);
+                    g2d.fillText(line, (600 - g2d.measureText(line).width) / 2, startY);
                     startY += 25;
                 });
             } else {
                 g2d.font = "bold 20px Arial";
-                g2d.fillText(systemMessage, (canvas.width - g2d.measureText(systemMessage).width) / 2, 420);
+                g2d.fillText(systemMessage, (600 - g2d.measureText(systemMessage).width) / 2, 420);
             }
         }
     }
 
     if (currentDiceImg && currentDiceImg.complete) {
-        g2d.drawImage(currentDiceImg, canvas.width / 2 - 50, canvas.height - 180, 100, 100);
+        g2d.drawImage(currentDiceImg, 600 / 2 - 50, 1080 - 180, 100, 100);
     }
     drawScoreBoards(g2d);
 
@@ -382,7 +426,7 @@ function repaintAll() {
 }
 
 function renderGrid(g2d) {
-    let seaStartY = 270, seaEndY = canvas.height - 180;
+    let seaStartY = 270, seaEndY = 1080 - 180;
     let topW = 220, botW = 500, centerX = 300;
 
     for (let r = 0; r < ROWS; r++) {
@@ -523,14 +567,14 @@ function drawScoreBoards(g2d) {
 
 function drawGameOverScreen(g2d) {
     g2d.fillStyle = "rgba(0, 0, 0, 0.72)";
-    g2d.fillRect(0, 0, canvas.width, canvas.height);
+    g2d.fillRect(0, 0, 600, 1080);
 
     let panelImg = null;
     if (gameOverWinner === "PLAYER 1 WINS!") panelImg = images['player1wins'];
     else if (gameOverWinner === "PLAYER 2 WINS!") panelImg = images['player2wins'];
 
     let panelW = 560, panelH = 340;
-    let panelX = (canvas.width - panelW) / 2;
+    let panelX = (600 - panelW) / 2;
     let panelY = 310;
 
     if (panelImg && panelImg.complete && panelImg.naturalWidth > 0) {
