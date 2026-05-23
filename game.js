@@ -13,21 +13,16 @@
         document.getElementById("homePanel").classList.add("active");
     }
 
-    // Auto-play as soon as the browser allows (muted so autoplay works)
     introVideo.play().catch(() => {
-        // If autoplay is blocked entirely, show a tap-to-play fallback
         skipBtn.textContent = "TAP TO START ▶";
     });
 
-    // Advance to home when the clip ends — also hide the skip button
     introVideo.addEventListener("ended", goToHome);
-
-    // Skip button
     skipBtn.addEventListener("click", goToHome);
 })();
 
 // =============================================
-//  GAME PHASES & TURN LOGIC
+//  GAME STATE
 // =============================================
 let gameStarted = false;
 let isDecidingTurn = true;
@@ -42,7 +37,6 @@ let p1MovedThisRound = false, p2MovedThisRound = false;
 let currentOperation = "?";
 let needsToRollOp = true, gameOver = false, isPaused = false;
 
-// --- Integrated Message State ---
 let systemMessage = "";
 let waitingForPowerUpChoice = false;
 let waitingToRollPowerUp = false;
@@ -50,27 +44,25 @@ let powerUpRecipient = null;
 let preRolledPowerUp = "";
 let isPowerUpPanelActive = false;
 
-// --- TELEPORT STATE VARIABLES ---
 let isTeleportPending = false;
 let pendingTeleportDirection = -1;
 
-// --- DOUBLE TILE STATE VARIABLES ---
 let p1HasDoubleTile = false;
 let p2HasDoubleTile = false;
 
-// --- GAME OVER SCREEN DATA ---
 let gameOverWinner = "";
 let gameOverTargetGoal = 0;
 let gameOverP1Score = 0;
 let gameOverP2Score = 0;
 
-// --- DYNAMIC RENDERING ANIMATION CONTROLLERS ---
 let animationFrames = 0;
 let currentDiceImg = null;
 let isAnimating = false;
 let isRollingPowerUp = false;
 
-// --- GRAPHIC ASSETS PRELOAD SYSTEM LOGIC ---
+// =============================================
+//  ASSET LOADING
+// =============================================
 const images = {};
 const assetPaths = {
     gameBg: 'assets/dagat.png',
@@ -89,14 +81,12 @@ const assetPaths = {
 let diceImages = Array(6);
 let opDiceImages = Array(2);
 let powerUpImages = Array(3);
-
 let totalAssets = Object.keys(assetPaths).length + 6 + 2;
 let loadedAssetsCount = 0;
 
 function checkAllAssetsLoaded() {
     loadedAssetsCount++;
     if (loadedAssetsCount === totalAssets) {
-        console.log("All execution source assets stored safely.");
         powerUpImages[0] = images['tp'];
         powerUpImages[1] = images['co'];
         powerUpImages[2] = images['sx'];
@@ -117,7 +107,6 @@ function loadGameAssets() {
     opDiceImages[0] = new Image();
     opDiceImages[0].src = 'assets/op_add.png';
     opDiceImages[0].onload = checkAllAssetsLoaded;
-
     opDiceImages[1] = new Image();
     opDiceImages[1].src = 'assets/op_sub.png';
     opDiceImages[1].onload = checkAllAssetsLoaded;
@@ -125,7 +114,9 @@ function loadGameAssets() {
 
 loadGameAssets();
 
-// --- ACTIVE PLAYER HOISTING RECONSTRUCTIONS ---
+// =============================================
+//  PLAYER CLASS
+// =============================================
 class Player {
     constructor(startCol, name, imageKey) {
         this.row = ROWS;
@@ -136,7 +127,6 @@ class Player {
         this.imageKey = imageKey;
         this.timer = null;
     }
-
     startTimer() {
         if (this.timer) return;
         this.timer = setInterval(() => {
@@ -150,58 +140,49 @@ class Player {
             }
         }, 1000);
     }
-
     stopTimer() {
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
-        }
+        if (this.timer) { clearInterval(this.timer); this.timer = null; }
     }
 }
 
 let p1 = new Player(1, "P1", "red");
 let p2 = new Player(4, "P2", "blue");
 
-// --- INTERFACE DOM CONTROLLER ELEMENTS SELECTORS ---
+// =============================================
+//  CANVAS SCALING
+//  Design resolution: 600x1080.
+//  syncCanvasResolution only writes canvas.width/
+//  height when they actually differ — reassigning
+//  wipes the buffer, which caused the pause glitch.
+// =============================================
 const canvas = document.getElementById("gameCanvas");
 const g2d = canvas.getContext("2d");
 
-// =============================================
-//  MOBILE CANVAS SCALING
-//  The canvas HTML attribute is always 600×1080
-//  (the "design resolution"). On mobile the CSS
-//  shrinks the element, so we re-stamp the canvas
-//  buffer to match the CSS pixel size and apply a
-//  uniform scale transform so every draw call uses
-//  the original 600×1080 coordinate space.
-// =============================================
 function syncCanvasResolution() {
-    const cssW = canvas.clientWidth;
-    const cssH = canvas.clientHeight;
+    const cssW = canvas.clientWidth  || 600;
+    const cssH = canvas.clientHeight || 1080;
     if (canvas.width !== cssW || canvas.height !== cssH) {
         canvas.width  = cssW;
         canvas.height = cssH;
     }
 }
 
-function getScale() {
-    return {
-        x: canvas.width  / 600,
-        y: canvas.height / 1080
-    };
+function applyScale() {
+    g2d.setTransform(canvas.width / 600, 0, 0, canvas.height / 1080, 0, 0);
 }
 
-function showScreen(screenId) {
+function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
+    document.getElementById(id).classList.add('active');
 }
 
-// Recalc canvas size whenever the window resizes (orientation change, etc.)
 window.addEventListener("resize", () => {
-    if (gameStarted && !gameOver) repaintAll();
+    if (gameStarted && !gameOver && !isPaused) repaintAll();
 });
 
-// --- EVENT MANAGEMENT TRIGGERS ---
+// =============================================
+//  EVENT LISTENERS
+// =============================================
 document.getElementById("playBtn").addEventListener("click", () => {
     gameStarted = true;
     showScreen("activeGamePanel");
@@ -216,198 +197,124 @@ document.getElementById("homeExitBtn").addEventListener("click", () => window.cl
 document.getElementById("gamePauseBtn").addEventListener("click", togglePause);
 document.getElementById("resumeBtn").addEventListener("click", resumeGame);
 document.getElementById("quitBtn").addEventListener("click", () => {
-    resumeGame();
-    resetGame();
-    showScreen("homePanel");
+    resumeGame(); resetGame(); showScreen("homePanel");
 });
 
 document.getElementById("rollBtn").addEventListener("click", () => {
     if (!gameOver && !isPaused && !waitingForPowerUpChoice) {
-        if (waitingToRollPowerUp) {
-            startPowerUpAnimation();
-        } else if (needsToRollOp) {
-            startDiceAnimation();
-        }
+        if (waitingToRollPowerUp) startPowerUpAnimation();
+        else if (needsToRollOp) startDiceAnimation();
     }
 });
-
 document.getElementById("rollBtnMobile").addEventListener("click", () => {
     if (!gameOver && !isPaused && !waitingForPowerUpChoice) {
-        if (waitingToRollPowerUp) {
-            startPowerUpAnimation();
-        } else if (needsToRollOp) {
-            startDiceAnimation();
-        }
+        if (waitingToRollPowerUp) startPowerUpAnimation();
+        else if (needsToRollOp) startDiceAnimation();
     }
 });
 
-function setRollButtonsDisabled(enabled) {
-    document.getElementById("rollBtn").disabled = !enabled;
-    const mobileRoll = document.getElementById("rollBtnMobile");
-    if (mobileRoll) mobileRoll.disabled = !enabled;
+function setRollButtonsDisabled(en) {
+    document.getElementById("rollBtn").disabled = !en;
+    const m = document.getElementById("rollBtnMobile");
+    if (m) m.disabled = !en;
 }
 
 window.addEventListener("keydown", (e) => {
     if (!gameStarted || gameOver || isPaused || isAnimating) return;
-
-    let key = e.key;
-    let keyLower = key.toLowerCase();
-    if (["arrowup", "arrowleft", "arrowright", "w", "a", "d", "y", "n"].includes(keyLower)) {
-        e.preventDefault();
-    }
-
+    const key = e.key, kl = key.toLowerCase();
+    if (["arrowup","arrowleft","arrowright","w","a","d","y","n"].includes(kl)) e.preventDefault();
     if (isPowerUpPanelActive) return;
     if (waitingForPowerUpChoice) {
-        if (keyLower === 'y') {
-            applyRandomPowerUp(powerUpRecipient);
-        } else if (keyLower === 'n') {
+        if (kl === 'y') applyRandomPowerUp(powerUpRecipient);
+        else if (kl === 'n') {
             systemMessage = "💨 " + powerUpRecipient.name + " DECLINED. Roll Operation!";
-            waitingForPowerUpChoice = false;
-            powerUpRecipient = null;
-            preRolledPowerUp = "";
-            currentDiceImg = null;
-            repaintAll();
+            waitingForPowerUpChoice = false; powerUpRecipient = null;
+            preRolledPowerUp = ""; currentDiceImg = null; repaintAll();
         }
         return;
     }
     if (isDecidingTurn || needsToRollOp) return;
-    handleMovement(key);
-    repaintAll();
+    handleMovement(key); repaintAll();
 });
 
-// --- MOBILE CONTROL BUTTON HANDLERS ---
 document.getElementById("moveUpBtn").addEventListener("click", () => {
-    if (!gameStarted || gameOver || isPaused || isAnimating) return;
-    if (isDecidingTurn || needsToRollOp) return;
-    handleMovement("ArrowUp");
-    repaintAll();
+    if (!gameStarted||gameOver||isPaused||isAnimating||isDecidingTurn||needsToRollOp) return;
+    handleMovement("ArrowUp"); repaintAll();
 });
-
 document.getElementById("moveLeftBtn").addEventListener("click", () => {
-    if (!gameStarted || gameOver || isPaused || isAnimating) return;
-    if (isDecidingTurn || needsToRollOp) return;
-    handleMovement("ArrowLeft");
-    repaintAll();
+    if (!gameStarted||gameOver||isPaused||isAnimating||isDecidingTurn||needsToRollOp) return;
+    handleMovement("ArrowLeft"); repaintAll();
 });
-
 document.getElementById("moveRightBtn").addEventListener("click", () => {
-    if (!gameStarted || gameOver || isPaused || isAnimating) return;
-    if (isDecidingTurn || needsToRollOp) return;
-    handleMovement("ArrowRight");
-    repaintAll();
+    if (!gameStarted||gameOver||isPaused||isAnimating||isDecidingTurn||needsToRollOp) return;
+    handleMovement("ArrowRight"); repaintAll();
 });
 
 document.getElementById("acceptBtn").addEventListener("click", () => {
-    if (waitingForPowerUpChoice && powerUpRecipient) {
-        applyRandomPowerUp(powerUpRecipient);
-    }
+    if (waitingForPowerUpChoice && powerUpRecipient) applyRandomPowerUp(powerUpRecipient);
 });
-
 document.getElementById("declineBtn").addEventListener("click", () => {
     if (waitingForPowerUpChoice && powerUpRecipient) {
         systemMessage = "💨 " + powerUpRecipient.name + " DECLINED. Roll Operation!";
-        waitingForPowerUpChoice = false;
-        powerUpRecipient = null;
-        preRolledPowerUp = "";
-        currentDiceImg = null;
-        repaintAll();
+        waitingForPowerUpChoice = false; powerUpRecipient = null;
+        preRolledPowerUp = ""; currentDiceImg = null; repaintAll();
     }
 });
 
 document.getElementById("powerUpOverlay").addEventListener("click", (e) => {
-    if (e.target === document.getElementById("powerUpOverlay")) {
-        hidePowerUpPanel();
-    }
+    if (e.target === document.getElementById("powerUpOverlay")) hidePowerUpPanel();
 });
-
 document.querySelectorAll(".powerup-btn[data-teleport]").forEach(btn => {
-    btn.addEventListener("click", () => {
-        const dir = btn.dataset.teleport;
-        handleTeleportChoice(dir);
-    });
+    btn.addEventListener("click", () => handleTeleportChoice(btn.dataset.teleport));
 });
-
 document.querySelectorAll(".powerup-btn[data-operator]").forEach(btn => {
-    btn.addEventListener("click", () => {
-        const op = btn.dataset.operator;
-        handleOperatorChoice(op);
-    });
+    btn.addEventListener("click", () => handleOperatorChoice(btn.dataset.operator));
 });
-
 document.getElementById("powerUpCancelBtn").addEventListener("click", () => {
     if (isPowerUpPanelActive) {
         systemMessage = "💨 " + (powerUpRecipient ? powerUpRecipient.name : "Player") + " DECLINED. Roll Operation!";
-        hidePowerUpPanel();
-        waitingForPowerUpChoice = false;
-        powerUpRecipient = null;
-        preRolledPowerUp = "";
-        currentDiceImg = null;
-        repaintAll();
+        hidePowerUpPanel(); waitingForPowerUpChoice = false; powerUpRecipient = null;
+        preRolledPowerUp = ""; currentDiceImg = null; repaintAll();
     }
 });
 
 // =============================================
-//  CORE RENDERING ENGINE
-//  Every repaintAll() call:
-//   1. Syncs the canvas buffer to CSS display size
-//   2. Applies a uniform scale so all draw calls
-//      work in the original 600×1080 space
+//  RENDER ENGINE
 // =============================================
 function repaintAll() {
-    // Step 1 — match canvas buffer to its CSS size
-    syncCanvasResolution();
+    syncCanvasResolution(); // no-op if size already matches — no buffer wipe
+    applyScale();           // scale all draws to 600x1080 design space
 
-    // Step 2 — reset transform then apply scale
-    const sc = getScale();
-    g2d.setTransform(sc.x, 0, 0, sc.y, 0, 0);
-
-    // Step 3 — clear in logical (600×1080) coords
     g2d.clearRect(0, 0, 600, 1080);
+    g2d.fillStyle = "#000"; g2d.fillRect(0, 0, 600, 1080);
 
-    g2d.fillStyle = "#000000";
-    g2d.fillRect(0, 0, 600, 1080);
+    if (images.gameBg?.complete)    g2d.drawImage(images.gameBg, 0, 0, 600, 1080);
+    if (images.island?.complete)    g2d.drawImage(images.island, 75, 0, 450, 280);
+    if (images.heli?.complete)      g2d.drawImage(images.heli, 200, 100, 200, 100);
 
-    if (images.gameBg && images.gameBg.complete) {
-        g2d.drawImage(images.gameBg, 0, 0, 600, 1080);
-    }
-    if (images.island && images.island.complete) {
-        g2d.drawImage(images.island, (600 - 450) / 2, 0, 450, 280);
-    }
-    if (images.heli && images.heli.complete) {
-        g2d.drawImage(images.heli, (600 / 2) - 100, 100, 200, 100);
-    }
-
-    drawTargetSign(g2d, (600 / 2) - 60, 195, String(targetGoal));
-    let displayRound = (currentTurn === 1) ? roundP1 : roundP2;
-    drawRoundSign(g2d, (600 / 2) - 60, 250, "ROUND " + displayRound);
+    drawTargetSign(g2d, 240, 195, String(targetGoal));
+    drawRoundSign(g2d, 240, 250, "ROUND " + ((currentTurn === 1) ? roundP1 : roundP2));
 
     renderGrid(g2d);
 
     if (!isAnimating) {
         if (!systemMessage || systemMessage.includes("ROLL")) {
             if (isDecidingTurn) {
-                let pName = (rollingForPlayer === 1) ? "P1" : "P2";
-                if (p1StartRoll === 0 && p2StartRoll === 0) systemMessage = pName + ": ROLL TO START";
-                else if (p1StartRoll > 0 && p2StartRoll === 0) systemMessage = "P1 rolled " + p1StartRoll + ". P2 ROLL!";
-                else if (p2StartRoll > 0 && p1StartRoll === 0) systemMessage = "P2 rolled " + p2StartRoll + ". P1 ROLL!";
+                let pn = (rollingForPlayer === 1) ? "P1" : "P2";
+                if (!p1StartRoll && !p2StartRoll)        systemMessage = pn + ": ROLL TO START";
+                else if (p1StartRoll > 0 && !p2StartRoll) systemMessage = "P1 rolled " + p1StartRoll + ". P2 ROLL!";
+                else if (p2StartRoll > 0 && !p1StartRoll) systemMessage = "P2 rolled " + p2StartRoll + ". P1 ROLL!";
             } else if (needsToRollOp && !waitingToRollPowerUp) {
                 systemMessage = ((currentTurn === 1) ? "P1" : "P2") + ": ROLL OPERATION";
             }
         }
-
         if (systemMessage) {
-            g2d.fillStyle = "rgba(0, 0, 0, 0.78)";
-            g2d.fillRect(40, 340, 520, 140);
+            g2d.fillStyle = "rgba(0,0,0,0.78)"; g2d.fillRect(40, 340, 520, 140);
             g2d.fillStyle = "#FFFF00";
-
             if (systemMessage.includes("\n")) {
                 g2d.font = "bold 16px Arial";
-                let lines = systemMessage.split("\n");
-                let startY = 365;
-                lines.forEach(line => {
-                    g2d.fillText(line, (600 - g2d.measureText(line).width) / 2, startY);
-                    startY += 25;
-                });
+                let lines = systemMessage.split("\n"), y = 365;
+                lines.forEach(ln => { g2d.fillText(ln, (600 - g2d.measureText(ln).width) / 2, y); y += 25; });
             } else {
                 g2d.font = "bold 20px Arial";
                 g2d.fillText(systemMessage, (600 - g2d.measureText(systemMessage).width) / 2, 420);
@@ -415,535 +322,354 @@ function repaintAll() {
         }
     }
 
-    if (currentDiceImg && currentDiceImg.complete) {
-        g2d.drawImage(currentDiceImg, 600 / 2 - 50, 1080 - 180, 100, 100);
-    }
+    if (currentDiceImg?.complete) g2d.drawImage(currentDiceImg, 250, 900, 100, 100);
     drawScoreBoards(g2d);
-
-    if (gameOver) {
-        drawGameOverScreen(g2d);
-    }
+    if (gameOver) drawGameOverScreen(g2d);
 }
 
 function renderGrid(g2d) {
-    let seaStartY = 270, seaEndY = 1080 - 180;
-    let topW = 220, botW = 500, centerX = 300;
-
+    const sy = 270, ey = 900, tw = 220, bw = 500, cx = 300;
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
-            let progT = r / ROWS, progB = (r + 1) / ROWS;
-            let yT = seaStartY + (progT * (seaEndY - seaStartY));
-            let yB = seaStartY + (progB * (seaEndY - seaStartY));
-            let wT = topW + (progT * (botW - topW));
-            let wB = topW + (progB * (botW - topW));
-
-            let xTL = centerX - (wT / 2) + (c * wT / COLS);
-            let xTR = centerX - (wT / 2) + ((c + 1) * wT / COLS);
-            let xBL = centerX - (wB / 2) + (c * wB / COLS);
-            let xBR = centerX - (wB / 2) + ((c + 1) * wB / COLS);
-
+            let pT = r/ROWS, pB = (r+1)/ROWS;
+            let yT = sy + pT*(ey-sy), yB = sy + pB*(ey-sy);
+            let wT = tw + pT*(bw-tw), wB = tw + pB*(bw-tw);
+            let xTL = cx-wT/2+c*wT/COLS, xTR = cx-wT/2+(c+1)*wT/COLS;
+            let xBL = cx-wB/2+c*wB/COLS, xBR = cx-wB/2+(c+1)*wB/COLS;
             g2d.beginPath();
-            g2d.moveTo(xTL, yT); g2d.lineTo(xTR, yT);
-            g2d.lineTo(xBR, yB); g2d.lineTo(xBL, yB);
+            g2d.moveTo(xTL,yT); g2d.lineTo(xTR,yT); g2d.lineTo(xBR,yB); g2d.lineTo(xBL,yB);
             g2d.closePath();
-
             if (r === 0) {
-                g2d.fillStyle = (c % 2 === 0) ? "#FFFFFF" : "#000000";
-                g2d.fill();
-                g2d.strokeStyle = (c % 2 === 0) ? "#000000" : "#FFFFFF";
-                g2d.stroke();
+                g2d.fillStyle   = (c%2===0)?"#FFF":"#000";
+                g2d.strokeStyle = (c%2===0)?"#000":"#FFF";
             } else {
-                g2d.fillStyle = "rgba(0, 100, 200, 0.58)";
-                g2d.fill();
-                g2d.strokeStyle = "rgba(255, 255, 255, 0.2)";
-                g2d.stroke();
-
-                g2d.fillStyle = "#FFFFFF";
-                g2d.font = "bold 16px Monospaced";
-                g2d.fillText(String(gridNumbers[r][c]), (xTL + xBR) / 2 - 5, (yT + yB) / 2 + 5);
+                g2d.fillStyle   = "rgba(0,100,200,0.58)";
+                g2d.strokeStyle = "rgba(255,255,255,0.2)";
+            }
+            g2d.fill(); g2d.stroke();
+            if (r !== 0) {
+                g2d.fillStyle = "#FFF"; g2d.font = "bold 16px Monospaced";
+                g2d.fillText(String(gridNumbers[r][c]), (xTL+xBR)/2-5, (yT+yB)/2+5);
             }
         }
     }
-    drawPlayerAtPos(g2d, p1, seaStartY, seaEndY, topW, botW, centerX);
-    drawPlayerAtPos(g2d, p2, seaStartY, seaEndY, topW, botW, centerX);
+    drawPlayerAtPos(g2d, p1, sy, ey, tw, bw, cx);
+    drawPlayerAtPos(g2d, p2, sy, ey, tw, bw, cx);
 }
 
-function drawPlayerAtPos(g2d, p, seaStartY, seaEndY, topW, botW, centerX) {
-    let progT = Math.min(p.row, ROWS - 1) / ROWS;
-    let progB = (Math.min(p.row, ROWS - 1) + 1) / ROWS;
-
-    let yT = seaStartY + (progT * (seaEndY - seaStartY));
-    let yB = seaStartY + (progB * (seaEndY - seaStartY));
-
-    let wT = topW + (progT * (botW - topW));
-    let wB = topW + (progB * (botW - topW));
-
-    let xTL = centerX - (wT / 2) + (p.col * wT / COLS);
-    let xTR = centerX - (wT / 2) + ((p.col + 1) * wT / COLS);
-
-    let xBL = centerX - (wB / 2) + (p.col * wB / COLS);
-    let xBR = centerX - (wB / 2) + ((p.col + 1) * wB / COLS);
-
-    let imgObj = images[p.imageKey];
-
-    if (p.row === ROWS) {
-        drawPlayer(g2d, xTL, xTR, xBL, xBR, yT + 40, yB + 40, imgObj);
-    } else {
-        drawPlayer(g2d, xTL, xTR, xBL, xBR, yT, yB, imgObj);
-    }
+function drawPlayerAtPos(g2d, p, sy, ey, tw, bw, cx) {
+    let row = Math.min(p.row, ROWS-1);
+    let pT = row/ROWS, pB = (row+1)/ROWS;
+    let yT = sy+pT*(ey-sy), yB = sy+pB*(ey-sy);
+    let wT = tw+pT*(bw-tw), wB = tw+pB*(bw-tw);
+    let xTL = cx-wT/2+p.col*wT/COLS, xTR = cx-wT/2+(p.col+1)*wT/COLS;
+    let xBL = cx-wB/2+p.col*wB/COLS, xBR = cx-wB/2+(p.col+1)*wB/COLS;
+    let off = (p.row===ROWS)?40:0;
+    drawPlayer(g2d, xTL, xTR, xBL, xBR, yT+off, yB+off, images[p.imageKey]);
 }
 
 function drawPlayer(g2d, xL1, xR1, xL2, xR2, y1, y2, img) {
-    if (!img || !img.complete) return;
-    let w = (xR1 - xL1 + xR2 - xL2) / 2;
-    let h = y2 - y1;
-    g2d.drawImage(
-        img,
-        (xL1 + xR1 + xL2 + xR2) / 4 - (w * 0.4),
-        (y1 + y2) / 2 - (h * 0.4),
-        w * 0.8,
-        h * 0.8
-    );
+    if (!img?.complete) return;
+    let w=(xR1-xL1+xR2-xL2)/2, h=y2-y1;
+    g2d.drawImage(img, (xL1+xR1+xL2+xR2)/4-w*0.4, (y1+y2)/2-h*0.4, w*0.8, h*0.8);
 }
 
-// --- SIGN RENDER FORMATTING ---
 function drawSign(g2d, x, y, l1, l2, pc) {
-    if (images.scoreBgImg && images.scoreBgImg.complete) {
-        g2d.drawImage(images.scoreBgImg, x, y, 180, 80);
-    } else {
-        g2d.fillStyle = "#8B4513";
-        g2d.fillRect(x, y, 180, 80);
-    }
-    g2d.fillStyle = "#FFFFFF";
-    g2d.font = "bold 20px Courier New";
-    g2d.fillText(l1, x + 20, y + 35);
-    g2d.font = "13px Arial";
-    g2d.fillStyle = pc;
-    g2d.fillText(l2, x + 20, y + 55);
+    if (images.scoreBgImg?.complete) g2d.drawImage(images.scoreBgImg, x, y, 180, 80);
+    else { g2d.fillStyle="#8B4513"; g2d.fillRect(x,y,180,80); }
+    g2d.fillStyle="#FFF"; g2d.font="bold 20px Courier New"; g2d.fillText(l1,x+20,y+35);
+    g2d.font="13px Arial"; g2d.fillStyle=pc; g2d.fillText(l2,x+20,y+55);
 }
 
 function drawTargetSign(g2d, x, y, text) {
-    if (images.scoreBgImg && images.scoreBgImg.complete) {
-        g2d.drawImage(images.scoreBgImg, x, y, 120, 50);
-    } else {
-        g2d.fillStyle = "#8B4513";
-        g2d.fillRect(x, y, 120, 50);
-    }
-    g2d.fillStyle = "#FFFF00";
-    g2d.font = "bold 30px Arial";
-    g2d.fillText(text, x + (120 / 2) - (g2d.measureText(text).width / 2), y + 35);
+    if (images.scoreBgImg?.complete) g2d.drawImage(images.scoreBgImg, x, y, 120, 50);
+    else { g2d.fillStyle="#8B4513"; g2d.fillRect(x,y,120,50); }
+    g2d.fillStyle="#FFFF00"; g2d.font="bold 30px Arial";
+    g2d.fillText(text, x+60-g2d.measureText(text).width/2, y+35);
 }
 
 function drawRoundSign(g2d, x, y, text) {
     y -= 10;
-    if (images.scoreBgImg && images.scoreBgImg.complete) {
-        g2d.drawImage(images.scoreBgImg, x, y, 120, 30);
-    } else {
-        g2d.fillStyle = "#654321";
-        g2d.fillRect(x, y, 120, 30);
-    }
-    g2d.fillStyle = "#FFFFFF";
-    g2d.font = "bold 14px Arial";
-    g2d.fillText(text, x + (120 / 2) - (g2d.measureText(text).width / 2), y + 20);
-
+    if (images.scoreBgImg?.complete) g2d.drawImage(images.scoreBgImg, x, y, 120, 30);
+    else { g2d.fillStyle="#654321"; g2d.fillRect(x,y,120,30); }
+    g2d.fillStyle="#FFF"; g2d.font="bold 14px Arial";
+    g2d.fillText(text, x+60-g2d.measureText(text).width/2, y+20);
     try {
-        let currentRoundNum = parseInt(text.replace(/[^0-9]/g, ""));
-        if ((currentRoundNum + 1) % 3 === 0) {
-            let warningText = "⚠️ POWER-UP NEXT!";
-            g2d.font = "bold 12px Arial";
-            let warnWidth = g2d.measureText(warningText).width;
-            g2d.fillStyle = "rgba(255, 69, 0, 0.75)";
-            g2d.fillRect(x - 15, y + 35, 150, 22);
-            g2d.fillStyle = "#FFFF00";
-            g2d.fillText(warningText, (x + 60) - (warnWidth / 2), y + 50);
+        let n = parseInt(text.replace(/[^0-9]/g,""));
+        if ((n+1)%3===0) {
+            let wt="⚠️ POWER-UP NEXT!"; g2d.font="bold 12px Arial";
+            g2d.fillStyle="rgba(255,69,0,0.75)"; g2d.fillRect(x-15,y+35,150,22);
+            g2d.fillStyle="#FFFF00"; g2d.fillText(wt, x+60-g2d.measureText(wt).width/2, y+50);
         }
-    } catch (e) {}
+    } catch(e){}
 }
 
 function drawScoreBoards(g2d) {
-    drawSign(g2d, 15, 30, "P1: " + p1.currentTotal, "Time: " + p1.timeLeft, "#FFFFFF");
-    drawSign(g2d, 405, 30, "P2: " + p2.currentTotal, "Time: " + p2.timeLeft, "#FFFFFF");
+    drawSign(g2d,15,30,"P1: "+p1.currentTotal,"Time: "+p1.timeLeft,"#FFF");
+    drawSign(g2d,405,30,"P2: "+p2.currentTotal,"Time: "+p2.timeLeft,"#FFF");
 }
 
 function drawGameOverScreen(g2d) {
-    g2d.fillStyle = "rgba(0, 0, 0, 0.72)";
-    g2d.fillRect(0, 0, 600, 1080);
-
-    let panelImg = null;
-    if (gameOverWinner === "PLAYER 1 WINS!") panelImg = images['player1wins'];
-    else if (gameOverWinner === "PLAYER 2 WINS!") panelImg = images['player2wins'];
-
-    let panelW = 560, panelH = 340;
-    let panelX = (600 - panelW) / 2;
-    let panelY = 310;
-
-    if (panelImg && panelImg.complete && panelImg.naturalWidth > 0) {
-        g2d.drawImage(panelImg, panelX, panelY, panelW, panelH);
-    } else {
-        g2d.fillStyle = "#2d7a2d";
-        g2d.fillRect(panelX, panelY, panelW, panelH);
-        g2d.fillStyle = "#6b4423";
-        g2d.fillRect(panelX + 14, panelY + 14, panelW - 28, panelH - 28);
-        g2d.save();
-        g2d.textAlign = "center";
-        g2d.font = "bold 36px Arial";
-        g2d.fillStyle = "#FFFFFF";
-        g2d.fillText(gameOverWinner, panelX + panelW / 2, panelY + 100);
-        g2d.restore();
+    g2d.fillStyle="rgba(0,0,0,0.72)"; g2d.fillRect(0,0,600,1080);
+    let pi=(gameOverWinner==="PLAYER 1 WINS!")?images['player1wins']
+          :(gameOverWinner==="PLAYER 2 WINS!")?images['player2wins']:null;
+    let pw=560,ph=340,px=20,py=310;
+    if (pi?.complete && pi.naturalWidth>0) { g2d.drawImage(pi,px,py,pw,ph); }
+    else {
+        g2d.fillStyle="#2d7a2d"; g2d.fillRect(px,py,pw,ph);
+        g2d.fillStyle="#6b4423"; g2d.fillRect(px+14,py+14,pw-28,ph-28);
+        g2d.save(); g2d.textAlign="center"; g2d.font="bold 36px Arial";
+        g2d.fillStyle="#FFF"; g2d.fillText(gameOverWinner,px+pw/2,py+100); g2d.restore();
     }
-
-    g2d.save();
-    g2d.textAlign = "left";
-    let valX = panelX + 185;
-    let targetY = panelY + panelH * 0.665;
-    let p1Y     = panelY + panelH * 0.760;
-    let p2Y     = panelY + panelH * 0.855;
-    g2d.shadowColor = "rgba(0,0,0,0.95)";
-    g2d.shadowBlur = 6;
-    g2d.shadowOffsetX = 2;
-    g2d.shadowOffsetY = 2;
-    g2d.font = "bold 22px 'Courier New', monospace";
-    g2d.fillStyle = "#FFFF55";
-    g2d.fillText(String(gameOverTargetGoal), valX, targetY);
-    g2d.fillStyle = "#FF8888";
-    g2d.fillText(String(gameOverP1Score), valX, p1Y);
-    g2d.fillStyle = "#88AAFF";
-    g2d.fillText(String(gameOverP2Score), valX, p2Y);
+    g2d.save(); g2d.textAlign="left";
+    g2d.shadowColor="rgba(0,0,0,0.95)"; g2d.shadowBlur=6; g2d.shadowOffsetX=2; g2d.shadowOffsetY=2;
+    g2d.font="bold 22px 'Courier New',monospace";
+    g2d.fillStyle="#FFFF55"; g2d.fillText(String(gameOverTargetGoal),px+185,py+ph*0.665);
+    g2d.fillStyle="#FF8888"; g2d.fillText(String(gameOverP1Score),   px+185,py+ph*0.760);
+    g2d.fillStyle="#88AAFF"; g2d.fillText(String(gameOverP2Score),   px+185,py+ph*0.855);
     g2d.restore();
 }
 
-// --- ENGINE REACTION MECHANICS ---
+// =============================================
+//  GAME LOGIC
+// =============================================
 function randomizeGrid() {
-    for (let r = 0; r < ROWS; r++)
-        for (let c = 0; c < COLS; c++)
-            gridNumbers[r][c] = Math.floor(Math.random() * 10);
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++)
+        gridNumbers[r][c]=Math.floor(Math.random()*10);
 }
 
 function resetGame() {
     p1.stopTimer(); p2.stopTimer();
-    p1.row = ROWS; p1.col = 1; p1.currentTotal = 0; p1.timeLeft = 300;
-    p2.row = ROWS; p2.col = 4; p2.currentTotal = 0; p2.timeLeft = 300;
-    currentTurn = 1; roundP1 = 1; roundP2 = 1; movesThisTurn = 0;
-    p1MovedThisRound = false; p2MovedThisRound = false;
-    needsToRollOp = true; isDecidingTurn = true;
-    p1StartRoll = 0; p2StartRoll = 0; rollingForPlayer = 1;
-    gameOver = false; isPaused = false; systemMessage = "";
-    waitingForPowerUpChoice = false; waitingToRollPowerUp = false;
-    powerUpRecipient = null; preRolledPowerUp = "";
-    isTeleportPending = false; pendingTeleportDirection = -1;
-    p1HasDoubleTile = false; p2HasDoubleTile = false;
-    currentDiceImg = null;
-    gameOverWinner = ""; gameOverTargetGoal = 0;
-    gameOverP1Score = 0; gameOverP2Score = 0;
-    targetGoal = Math.floor(Math.random() * 101);
-    randomizeGrid();
-    repaintAll();
+    p1.row=ROWS;p1.col=1;p1.currentTotal=0;p1.timeLeft=300;
+    p2.row=ROWS;p2.col=4;p2.currentTotal=0;p2.timeLeft=300;
+    currentTurn=1;roundP1=1;roundP2=1;movesThisTurn=0;
+    p1MovedThisRound=false;p2MovedThisRound=false;
+    needsToRollOp=true;isDecidingTurn=true;
+    p1StartRoll=0;p2StartRoll=0;rollingForPlayer=1;
+    gameOver=false;isPaused=false;systemMessage="";
+    waitingForPowerUpChoice=false;waitingToRollPowerUp=false;
+    powerUpRecipient=null;preRolledPowerUp="";
+    isTeleportPending=false;pendingTeleportDirection=-1;
+    p1HasDoubleTile=false;p2HasDoubleTile=false;
+    currentDiceImg=null;
+    gameOverWinner="";gameOverTargetGoal=0;gameOverP1Score=0;gameOverP2Score=0;
+    targetGoal=Math.floor(Math.random()*101);
+    randomizeGrid(); repaintAll();
 }
 
 function startDiceAnimation() {
-    setRollButtonsDisabled(false);
-    isAnimating = true;
-    animationFrames = 0;
-    let animTimer = setInterval(() => {
+    setRollButtonsDisabled(false); isAnimating=true; animationFrames=0;
+    let t=setInterval(()=>{
         animationFrames++;
-        if (isDecidingTurn) currentDiceImg = diceImages[Math.floor(Math.random() * 6)];
-        else currentDiceImg = opDiceImages[Math.floor(Math.random() * 2)];
+        currentDiceImg=isDecidingTurn?diceImages[Math.floor(Math.random()*6)]:opDiceImages[Math.floor(Math.random()*2)];
         repaintAll();
-        if (animationFrames > 12) { clearInterval(animTimer); finalizeRoll(); }
-    }, 80);
+        if (animationFrames>12){clearInterval(t);finalizeRoll();}
+    },80);
 }
 
 function finalizeRoll() {
     if (isDecidingTurn) {
-        let rollValue = Math.floor(Math.random() * 6) + 1;
-        let ongoingRound = (rollingForPlayer === 1) ? roundP1 : roundP2;
-
-        if (rollingForPlayer === 1) {
-            p1StartRoll = rollValue;
-            if (ongoingRound > 1 && p1StartRoll === 1) {
-                p2StartRoll = -1;
-                systemMessage = "🎲 P1 rolled 1 in Round " + ongoingRound + "! Moving first.";
-            } else if (p2StartRoll === 0) { rollingForPlayer = 2; }
+        let rv=Math.floor(Math.random()*6)+1, or=(rollingForPlayer===1)?roundP1:roundP2;
+        if (rollingForPlayer===1) {
+            p1StartRoll=rv;
+            if (or>1&&rv===1){p2StartRoll=-1;systemMessage="🎲 P1 rolled 1 in Round "+or+"! Moving first.";}
+            else if (p2StartRoll===0) rollingForPlayer=2;
         } else {
-            p2StartRoll = rollValue;
-            if (ongoingRound > 1 && p2StartRoll === 1) {
-                p1StartRoll = -1;
-                systemMessage = "🎲 P2 rolled 1 in Round " + ongoingRound + "! Moving first.";
-            } else if (p1StartRoll === 0) { rollingForPlayer = 1; }
+            p2StartRoll=rv;
+            if (or>1&&rv===1){p1StartRoll=-1;systemMessage="🎲 P2 rolled 1 in Round "+or+"! Moving first.";}
+            else if (p1StartRoll===0) rollingForPlayer=1;
         }
-
-        if (p1StartRoll !== 0 && p2StartRoll !== 0) {
-            if (p1StartRoll === p2StartRoll && p1StartRoll > 0) {
-                p1StartRoll = 0; p2StartRoll = 0;
-                rollingForPlayer = (p1.timeLeft >= p2.timeLeft) ? 1 : 2;
+        if (p1StartRoll!==0&&p2StartRoll!==0) {
+            if (p1StartRoll===p2StartRoll&&p1StartRoll>0){
+                p1StartRoll=0;p2StartRoll=0;rollingForPlayer=(p1.timeLeft>=p2.timeLeft)?1:2;
             } else {
-                currentTurn = (p1StartRoll < p2StartRoll) ? 1 : 2;
-                isDecidingTurn = false;
-                let currentRound = (currentTurn === 1) ? roundP1 : roundP2;
-                if (currentRound % 3 === 0) triggerPowerUpIntegrated();
-                else systemMessage = "Player " + currentTurn + " moves first! Roll Operation.";
+                currentTurn=(p1StartRoll<p2StartRoll)?1:2; isDecidingTurn=false;
+                let cr=(currentTurn===1)?roundP1:roundP2;
+                if (cr%3===0) triggerPowerUpIntegrated();
+                else systemMessage="Player "+currentTurn+" moves first! Roll Operation.";
             }
         }
     } else {
-        let opRoll = Math.floor(Math.random() * 2);
-        currentOperation = (opRoll === 0) ? "+" : "-";
-        currentDiceImg = opDiceImages[opRoll];
-        needsToRollOp = false;
-        systemMessage = "";
+        let or=Math.floor(Math.random()*2);
+        currentOperation=(or===0)?"+":"-"; currentDiceImg=opDiceImages[or];
+        needsToRollOp=false; systemMessage="";
         if (isTeleportPending) executePendingTeleport();
-        else { if (currentTurn === 1) p1.startTimer(); else p2.startTimer(); }
+        else { if (currentTurn===1) p1.startTimer(); else p2.startTimer(); }
     }
-
-    isAnimating = false;
-    setRollButtonsDisabled(true);
-    repaintAll();
+    isAnimating=false; setRollButtonsDisabled(true); repaintAll();
 }
 
-// --- POWER-UP RULES ENGINE ---
 function triggerPowerUpIntegrated() {
-    powerUpRecipient = (currentTurn === 1) ? p1 : p2;
-    let activeRound = (currentTurn === 1) ? roundP1 : roundP2;
-    waitingToRollPowerUp = true;
-    needsToRollOp = true;
-    systemMessage = "🎰 " + powerUpRecipient.name + " moves first in Round " + activeRound + "!\nClick 'ROLL' to spin for a Power-Up!";
+    powerUpRecipient=(currentTurn===1)?p1:p2;
+    let ar=(currentTurn===1)?roundP1:roundP2;
+    waitingToRollPowerUp=true; needsToRollOp=true;
+    systemMessage="🎰 "+powerUpRecipient.name+" moves first in Round "+ar+"!\nClick 'ROLL' to spin for a Power-Up!";
 }
 
 function startPowerUpAnimation() {
-    waitingToRollPowerUp = false;
-    let powerUps = ["Teleport", "Operation Changer", "Double", "No Power Up"];
-    preRolledPowerUp = powerUps[Math.floor(Math.random() * powerUps.length)];
-    let activeRound = (currentTurn === 1) ? roundP1 : roundP2;
-    isRollingPowerUp = true;
-    isAnimating = true;
-    setRollButtonsDisabled(false);
-    let frames = 0;
-    let pTimer = setInterval(() => {
+    waitingToRollPowerUp=false;
+    let pups=["Teleport","Operation Changer","Double","No Power Up"];
+    preRolledPowerUp=pups[Math.floor(Math.random()*pups.length)];
+    let ar=(currentTurn===1)?roundP1:roundP2;
+    isRollingPowerUp=true; isAnimating=true; setRollButtonsDisabled(false);
+    let frames=0, pt=setInterval(()=>{
         frames++;
-        if (frames <= 14) {
-            let loadedKeys = ["tp", "co", "sx"];
-            currentDiceImg = images[loadedKeys[Math.floor(Math.random() * loadedKeys.length)]];
-            repaintAll();
+        if (frames<=14){
+            let k=["tp","co","sx"]; currentDiceImg=images[k[Math.floor(Math.random()*k.length)]]; repaintAll();
         } else {
-            clearInterval(pTimer);
-            isRollingPowerUp = false;
-            isAnimating = false;
-            setRollButtonsDisabled(true);
-            if (preRolledPowerUp === "No Power Up") {
-                systemMessage = "👑 " + powerUpRecipient.name + " moves first in Round " + activeRound + "!\n💨 NO POWER UP. Roll Operation to continue.";
-                waitingForPowerUpChoice = false;
-                powerUpRecipient = null;
-                preRolledPowerUp = "";
-                currentDiceImg = null;
+            clearInterval(pt); isRollingPowerUp=false; isAnimating=false; setRollButtonsDisabled(true);
+            if (preRolledPowerUp==="No Power Up"){
+                systemMessage="👑 "+powerUpRecipient.name+" moves first in Round "+ar+"!\n💨 NO POWER UP. Roll Operation to continue.";
+                waitingForPowerUpChoice=false;powerUpRecipient=null;preRolledPowerUp="";currentDiceImg=null;
             } else {
-                switch (preRolledPowerUp) {
-                    case "Teleport": currentDiceImg = images['tp']; break;
-                    case "Operation Changer": currentDiceImg = images['co']; break;
-                    case "Double": currentDiceImg = images['sx']; break;
-                }
-                systemMessage = powerUpRecipient.name + " moves first in Round " + activeRound + "!\nRolled: " + preRolledPowerUp + "\nPress Y to accept, N to decline.";
-                waitingForPowerUpChoice = true;
+                if (preRolledPowerUp==="Teleport") currentDiceImg=images['tp'];
+                else if (preRolledPowerUp==="Operation Changer") currentDiceImg=images['co'];
+                else if (preRolledPowerUp==="Double") currentDiceImg=images['sx'];
+                systemMessage=powerUpRecipient.name+" moves first in Round "+ar+"!\nRolled: "+preRolledPowerUp+"\nPress Y to accept, N to decline.";
+                waitingForPowerUpChoice=true;
             }
             repaintAll();
         }
-    }, 80);
+    },80);
 }
 
+// =============================================
+//  PAUSE — does NOT call repaintAll so the canvas
+//  buffer stays intact under the overlay, preventing
+//  the layout glitch that appeared on pause.
+// =============================================
 function togglePause() {
-    isPaused = true;
-    p1.stopTimer(); p2.stopTimer();
-    document.getElementById("pauseOverlay").style.display = "block";
-    repaintAll();
+    isPaused=true; p1.stopTimer(); p2.stopTimer();
+    document.getElementById("pauseOverlay").style.display="block";
+    // intentionally no repaintAll() — canvas stays frozen under the modal
 }
 
 function resumeGame() {
-    isPaused = false;
-    document.getElementById("pauseOverlay").style.display = "none";
-    if (!needsToRollOp && !gameOver && !isDecidingTurn) {
-        if (currentTurn === 1) p1.startTimer(); else p2.startTimer();
+    isPaused=false;
+    document.getElementById("pauseOverlay").style.display="none";
+    if (!needsToRollOp&&!gameOver&&!isDecidingTurn){
+        if (currentTurn===1) p1.startTimer(); else p2.startTimer();
     }
-    repaintAll();
+    repaintAll(); // safe now that overlay is gone
 }
 
 function endTurn() {
-    p1.stopTimer(); p2.stopTimer();
-    movesThisTurn = 0;
-    if (currentTurn === 1) { p1MovedThisRound = true; roundP1++; currentTurn = 2; }
-    else { p2MovedThisRound = true; roundP2++; currentTurn = 1; }
-
-    if (p1MovedThisRound && p2MovedThisRound) {
-        p1MovedThisRound = false; p2MovedThisRound = false;
-        isDecidingTurn = true; needsToRollOp = true;
-        p1StartRoll = 0; p2StartRoll = 0;
-        currentOperation = "?";
-        rollingForPlayer = (p1.timeLeft >= p2.timeLeft) ? 1 : 2;
-        systemMessage = "";
+    p1.stopTimer(); p2.stopTimer(); movesThisTurn=0;
+    if (currentTurn===1){p1MovedThisRound=true;roundP1++;currentTurn=2;}
+    else{p2MovedThisRound=true;roundP2++;currentTurn=1;}
+    if (p1MovedThisRound&&p2MovedThisRound){
+        p1MovedThisRound=false;p2MovedThisRound=false;
+        isDecidingTurn=true;needsToRollOp=true;
+        p1StartRoll=0;p2StartRoll=0;currentOperation="?";
+        rollingForPlayer=(p1.timeLeft>=p2.timeLeft)?1:2; systemMessage="";
     } else {
-        needsToRollOp = true;
-        let nextRound = (currentTurn === 1) ? roundP1 : roundP2;
-        systemMessage = (nextRound % 3 === 0) ? "⚠️ INCOMING POWER-UP ROUND!" : "";
+        needsToRollOp=true;
+        let nr=(currentTurn===1)?roundP1:roundP2;
+        systemMessage=(nr%3===0)?"⚠️ INCOMING POWER-UP ROUND!":"";
     }
     repaintAll();
 }
 
 function executePendingTeleport() {
-    isTeleportPending = false;
-    let recipient = (currentTurn === 1) ? p1 : p2;
-    let targetRow = recipient.row;
-    let targetCol = recipient.col;
-
-    if (pendingTeleportDirection === 0) targetCol -= 2;
-    else if (pendingTeleportDirection === 1) targetRow -= 2;
-    else if (pendingTeleportDirection === 2) targetCol += 2;
-
-    if (targetRow >= 0 && targetRow <= ROWS && targetCol >= 0 && targetCol < COLS) {
-        recipient.row = targetRow;
-        recipient.col = targetCol;
-        if (recipient.row === 0) { repaintAll(); checkWinCondition(); return; }
-        if (recipient.row < ROWS) {
-            let tileVal = gridNumbers[recipient.row][recipient.col];
-            let activeRound = (currentTurn === 1) ? roundP1 : roundP2;
-            let hasDouble = (currentTurn === 1) ? p1HasDoubleTile : p2HasDoubleTile;
-            if (hasDouble) {
-                tileVal *= 2;
-                if (currentTurn === 1) p1HasDoubleTile = false; else p2HasDoubleTile = false;
-            }
-            if (activeRound === 1 && movesThisTurn === 0) recipient.currentTotal = tileVal;
-            else applyOperation(recipient, tileVal);
+    isTeleportPending=false;
+    let rec=(currentTurn===1)?p1:p2, tr=rec.row, tc=rec.col;
+    if (pendingTeleportDirection===0) tc-=2;
+    else if (pendingTeleportDirection===1) tr-=2;
+    else if (pendingTeleportDirection===2) tc+=2;
+    if (tr>=0&&tr<=ROWS&&tc>=0&&tc<COLS){
+        rec.row=tr;rec.col=tc;
+        if (rec.row===0){repaintAll();checkWinCondition();return;}
+        if (rec.row<ROWS){
+            let tv=gridNumbers[rec.row][rec.col];
+            let ar=(currentTurn===1)?roundP1:roundP2;
+            let hd=(currentTurn===1)?p1HasDoubleTile:p2HasDoubleTile;
+            if(hd){tv*=2;if(currentTurn===1)p1HasDoubleTile=false;else p2HasDoubleTile=false;}
+            if(ar===1&&movesThisTurn===0)rec.currentTotal=tv; else applyOperation(rec,tv);
         }
-        systemMessage = "🌀 Teleported! Landed on tile value with operator: " + currentOperation;
-    } else {
-        systemMessage = "🌀 Teleport failed! Out of map bounds.";
-    }
-
+        systemMessage="🌀 Teleported! Operator: "+currentOperation;
+    } else { systemMessage="🌀 Teleport failed! Out of map bounds."; }
     movesThisTurn++;
-    let activeRound = (currentTurn === 1) ? roundP1 : roundP2;
-    if (activeRound === 1) {
-        if (movesThisTurn === 2) endTurn();
-        else if (!gameOver) { if (currentTurn === 1) p1.startTimer(); else p2.startTimer(); }
-    } else {
-        if (movesThisTurn === 1) endTurn();
-        else if (!gameOver) { if (currentTurn === 1) p1.startTimer(); else p2.startTimer(); }
-    }
+    let ar=(currentTurn===1)?roundP1:roundP2;
+    if(ar===1){if(movesThisTurn===2)endTurn();else if(!gameOver){if(currentTurn===1)p1.startTimer();else p2.startTimer();}}
+    else{if(movesThisTurn===1)endTurn();else if(!gameOver){if(currentTurn===1)p1.startTimer();else p2.startTimer();}}
     repaintAll();
 }
 
 function handleMovement(key) {
-    let active = (currentTurn === 1) ? p1 : p2;
-    let activeRound = (currentTurn === 1) ? roundP1 : roundP2;
-    let targetRow = active.row;
-    let targetCol = active.col;
-
-    if (key === "ArrowUp" || key === "w" || key === "W") targetRow--;
-    else if (key === "ArrowLeft" || key === "a" || key === "A") targetCol--;
-    else if (key === "ArrowRight" || key === "d" || key === "D") targetCol++;
+    let act=(currentTurn===1)?p1:p2, ar=(currentTurn===1)?roundP1:roundP2;
+    let tr=act.row, tc=act.col;
+    if(key==="ArrowUp"||key==="w"||key==="W")tr--;
+    else if(key==="ArrowLeft"||key==="a"||key==="A")tc--;
+    else if(key==="ArrowRight"||key==="d"||key==="D")tc++;
     else return;
-
-    if (targetRow < 0 || targetRow > ROWS || targetCol < 0 || targetCol >= COLS) return;
-
-    active.row = targetRow;
-    active.col = targetCol;
-
-    if (active.row === 0) { repaintAll(); checkWinCondition(); return; }
-
-    let tileVal = gridNumbers[active.row][active.col];
-    let hasDouble = (currentTurn === 1) ? p1HasDoubleTile : p2HasDoubleTile;
-    if (hasDouble) {
-        tileVal *= 2;
-        if (currentTurn === 1) p1HasDoubleTile = false; else p2HasDoubleTile = false;
-    }
-    if (activeRound === 1 && movesThisTurn === 0) active.currentTotal = tileVal;
-    else applyOperation(active, tileVal);
-
+    if(tr<0||tr>ROWS||tc<0||tc>=COLS)return;
+    act.row=tr;act.col=tc;
+    if(act.row===0){repaintAll();checkWinCondition();return;}
+    let tv=gridNumbers[act.row][act.col];
+    let hd=(currentTurn===1)?p1HasDoubleTile:p2HasDoubleTile;
+    if(hd){tv*=2;if(currentTurn===1)p1HasDoubleTile=false;else p2HasDoubleTile=false;}
+    if(ar===1&&movesThisTurn===0)act.currentTotal=tv; else applyOperation(act,tv);
     movesThisTurn++;
-    if (activeRound === 1) { if (movesThisTurn === 2) endTurn(); }
-    else { if (movesThisTurn === 1) endTurn(); }
+    if(ar===1){if(movesThisTurn===2)endTurn();}
+    else{if(movesThisTurn===1)endTurn();}
 }
 
-function applyRandomPowerUp(recipient) {
-    waitingForPowerUpChoice = false;
-    if (preRolledPowerUp === "Teleport") { showTeleportPanel(recipient); return; }
-    if (preRolledPowerUp === "Operation Changer") { showOperationPanel(recipient); return; }
-    if (preRolledPowerUp === "Double") {
-        if (recipient === p1) p1HasDoubleTile = true; else p2HasDoubleTile = true;
-        systemMessage = "🎉 " + recipient.name + " accepted DOUBLE! Next tile value will be doubled. Roll operation to proceed.";
+function applyRandomPowerUp(rec) {
+    waitingForPowerUpChoice=false;
+    if(preRolledPowerUp==="Teleport"){showTeleportPanel(rec);return;}
+    if(preRolledPowerUp==="Operation Changer"){showOperationPanel(rec);return;}
+    if(preRolledPowerUp==="Double"){
+        if(rec===p1)p1HasDoubleTile=true;else p2HasDoubleTile=true;
+        systemMessage="🎉 "+rec.name+" accepted DOUBLE! Next tile value doubled. Roll operation.";
     }
-    preRolledPowerUp = "";
-    powerUpRecipient = null;
-    currentDiceImg = null;
-    repaintAll();
+    preRolledPowerUp="";powerUpRecipient=null;currentDiceImg=null;repaintAll();
 }
 
-function showTeleportPanel(recipient) {
-    powerUpRecipient = recipient;
-    waitingForPowerUpChoice = false;
-    isPowerUpPanelActive = true;
-    document.getElementById("powerUpOverlay").style.display = "block";
-    document.getElementById("teleportPanel").style.display = "block";
-    document.getElementById("operatorPanel").style.display = "none";
+function showTeleportPanel(rec) {
+    powerUpRecipient=rec;waitingForPowerUpChoice=false;isPowerUpPanelActive=true;
+    document.getElementById("powerUpOverlay").style.display="block";
+    document.getElementById("teleportPanel").style.display="block";
+    document.getElementById("operatorPanel").style.display="none";
 }
-
-function showOperationPanel(recipient) {
-    powerUpRecipient = recipient;
-    waitingForPowerUpChoice = false;
-    isPowerUpPanelActive = true;
-    document.getElementById("powerUpOverlay").style.display = "block";
-    document.getElementById("teleportPanel").style.display = "none";
-    document.getElementById("operatorPanel").style.display = "block";
+function showOperationPanel(rec) {
+    powerUpRecipient=rec;waitingForPowerUpChoice=false;isPowerUpPanelActive=true;
+    document.getElementById("powerUpOverlay").style.display="block";
+    document.getElementById("teleportPanel").style.display="none";
+    document.getElementById("operatorPanel").style.display="block";
 }
-
 function hidePowerUpPanel() {
-    isPowerUpPanelActive = false;
-    document.getElementById("powerUpOverlay").style.display = "none";
+    isPowerUpPanelActive=false;
+    document.getElementById("powerUpOverlay").style.display="none";
 }
 
 function handleTeleportChoice(choice) {
-    let direction = 1, dirName = "TOP";
-    if (choice === "L") { direction = 0; dirName = "LEFT"; }
-    else if (choice === "R") { direction = 2; dirName = "RIGHT"; }
-    pendingTeleportDirection = direction;
-    isTeleportPending = true;
-    currentDiceImg = null;
-    systemMessage = "🌀 Teleport " + dirName + " locked! Now click 'ROLL' to see your operation.";
-    preRolledPowerUp = "";
-    powerUpRecipient = null;
-    hidePowerUpPanel();
-    repaintAll();
+    let dir=1,dn="TOP";
+    if(choice==="L"){dir=0;dn="LEFT";}else if(choice==="R"){dir=2;dn="RIGHT";}
+    pendingTeleportDirection=dir;isTeleportPending=true;currentDiceImg=null;
+    systemMessage="🌀 Teleport "+dn+" locked! Click 'ROLL' for your operation.";
+    preRolledPowerUp="";powerUpRecipient=null;hidePowerUpPanel();repaintAll();
 }
-
 function handleOperatorChoice(choice) {
-    if (!["+", "-", "*", "/"].includes(choice)) choice = "+";
-    currentOperation = choice;
-    currentDiceImg = null;
-    needsToRollOp = false;
-    waitingForPowerUpChoice = false;
-    preRolledPowerUp = "";
-    powerUpRecipient = null;
-    systemMessage = "Operation changed to " + currentOperation + ". Use arrow keys to move.";
+    if(!["+","-","*","/"].includes(choice))choice="+";
+    currentOperation=choice;currentDiceImg=null;needsToRollOp=false;
+    waitingForPowerUpChoice=false;preRolledPowerUp="";powerUpRecipient=null;
+    systemMessage="Operation changed to "+currentOperation+". Use arrow keys to move.";
     hidePowerUpPanel();
-    if (currentTurn === 1) p1.startTimer(); else p2.startTimer();
+    if(currentTurn===1)p1.startTimer();else p2.startTimer();
     repaintAll();
 }
-
-function applyOperation(player, tileValue) {
-    if (currentOperation === "+") player.currentTotal += tileValue;
-    else if (currentOperation === "-") player.currentTotal -= tileValue;
-    else if (currentOperation === "*") player.currentTotal *= tileValue;
-    else if (currentOperation === "/") {
-        if (tileValue !== 0) player.currentTotal = Math.trunc(player.currentTotal / tileValue);
-    }
+function applyOperation(player,tv) {
+    if(currentOperation==="+")player.currentTotal+=tv;
+    else if(currentOperation==="-")player.currentTotal-=tv;
+    else if(currentOperation==="*")player.currentTotal*=tv;
+    else if(currentOperation==="/"){if(tv!==0)player.currentTotal=Math.trunc(player.currentTotal/tv);}
 }
-
 function checkWinCondition() {
-    gameOver = true;
-    p1.stopTimer(); p2.stopTimer();
-    let p1Diff = Math.abs(targetGoal - p1.currentTotal);
-    let p2Diff = Math.abs(targetGoal - p2.currentTotal);
-    let winner = "IT'S A TIE!";
-    if (p1Diff < p2Diff) winner = "PLAYER 1 WINS!";
-    else if (p2Diff < p1Diff) winner = "PLAYER 2 WINS!";
-    gameOverWinner = winner;
-    gameOverTargetGoal = targetGoal;
-    gameOverP1Score = p1.currentTotal;
-    gameOverP2Score = p2.currentTotal;
+    gameOver=true;p1.stopTimer();p2.stopTimer();
+    let d1=Math.abs(targetGoal-p1.currentTotal),d2=Math.abs(targetGoal-p2.currentTotal);
+    let w="IT'S A TIE!";
+    if(d1<d2)w="PLAYER 1 WINS!";else if(d2<d1)w="PLAYER 2 WINS!";
+    gameOverWinner=w;gameOverTargetGoal=targetGoal;
+    gameOverP1Score=p1.currentTotal;gameOverP2Score=p2.currentTotal;
     repaintAll();
 }
