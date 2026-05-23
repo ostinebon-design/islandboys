@@ -55,15 +55,27 @@
         document.getElementById("homePanel").classList.add("active");
     }
 
-    // Attempt autoplay; if blocked show tap-to-start
+    // On mobile, autoplay is blocked — show tap-to-start immediately
+    // and only try to autoplay; never auto-advance via 'ended' until
+    // the video has actually started playing.
+    let videoPlaying = false;
+
+    introVideo.addEventListener("playing", () => { videoPlaying = true; });
+    introVideo.addEventListener("ended",   () => { if (videoPlaying) goToHome(); });
+
+    // If video fails to load/play at all, show tap-to-start but stay on intro screen
+    introVideo.addEventListener("error", () => {
+        skipBtn.textContent = "TAP TO START ▶";
+    });
+
     const playPromise = introVideo.play();
     if (playPromise !== undefined) {
         playPromise.catch(() => {
+            // Autoplay blocked — show tap-to-start; don't auto-navigate
             skipBtn.textContent = "TAP TO START ▶";
         });
     }
 
-    introVideo.addEventListener("ended", goToHome);
     skipBtn.addEventListener("click", goToHome);
 })();
 
@@ -115,7 +127,7 @@ const assetPaths = {
     island:       'assets/island.png',
     heli:         'assets/helicopter.png',
     scoreBgImg:   'assets/scorebg.png',
-    infoBoard:    'assets/ip.png',       // ← new: info board for system messages
+    infoBoard:    'assets/ip.png',
     red:          'assets/red.png',
     blue:         'assets/blue.png',
     tp:           'assets/tp.png',
@@ -145,7 +157,7 @@ function loadGameAssets() {
         images[key] = new Image();
         images[key].src = assetPaths[key];
         images[key].onload  = checkAllAssetsLoaded;
-        images[key].onerror = checkAllAssetsLoaded; // don't stall on missing files
+        images[key].onerror = checkAllAssetsLoaded;
     }
     for (let i = 0; i < 6; i++) {
         diceImages[i] = new Image();
@@ -227,8 +239,6 @@ function showScreen(id) {
     const target = document.getElementById(id);
     target.classList.add('active');
 
-    // When switching TO the game panel, measure sizing first,
-    // then kick off a repaint loop so the canvas is never blank.
     if (id === "activeGamePanel") {
         if (window._setSizing) {
             window._setSizing();
@@ -255,11 +265,23 @@ window.addEventListener("resize", () => {
 document.getElementById("playBtn").addEventListener("click", () => {
     gameStarted = true;
     showScreen("activeGamePanel");
-    // Delay resetGame so the panel is fully visible & measured
-    setTimeout(() => {
-        resetGame();
-        window.focus();
-    }, 60);
+
+    // Wait for the panel to be fully laid out before measuring/drawing.
+    // On mobile the CSS vars (--canvas-h, --ctrl-h) need a paint cycle
+    // to propagate to clientHeight, so we poll with rAF until the canvas
+    // has real dimensions before calling resetGame().
+    function tryStart(attemptsLeft) {
+        if (window._setSizing) window._setSizing();
+        const cvs = document.getElementById("gameCanvas");
+        const h   = cvs ? cvs.clientHeight : 0;
+        if (h > 100 || attemptsLeft <= 0) {
+            resetGame();
+            window.focus();
+        } else {
+            requestAnimationFrame(() => tryStart(attemptsLeft - 1));
+        }
+    }
+    requestAnimationFrame(() => tryStart(8));
 });
 
 document.getElementById("homeTutBtn").addEventListener("click", () => showScreen("tutorialPanel"));
@@ -406,18 +428,15 @@ function repaintAll() {
 
 // ---- Draw the ip.png info board with text inside it ----
 function drawInfoBoard(g2d, message) {
-    // Board dimensions & position (canvas coords at 600x1080 scale)
     const bx = 60, by = 330, bw = 480, bh = 160;
 
     if (images.infoBoard?.complete && images.infoBoard.naturalWidth > 0) {
         g2d.drawImage(images.infoBoard, bx, by, bw, bh);
     } else {
-        // Fallback dark rectangle if image not loaded yet
         g2d.fillStyle = "rgba(0,0,0,0.82)";
         g2d.fillRect(bx, by, bw, bh);
     }
 
-    // Text rendering inside the board
     const lines = message.split("\n");
     const lineH  = lines.length > 2 ? 22 : lines.length > 1 ? 26 : 30;
     const baseFontSize = lines.length > 2 ? 15 : lines.length > 1 ? 18 : 22;
@@ -426,7 +445,6 @@ function drawInfoBoard(g2d, message) {
     g2d.textAlign = "center";
     g2d.textBaseline = "middle";
 
-    // Text shadow for legibility on the wood texture
     g2d.shadowColor   = "rgba(0,0,0,0.95)";
     g2d.shadowBlur    = 5;
     g2d.shadowOffsetX = 2;
@@ -436,7 +454,6 @@ function drawInfoBoard(g2d, message) {
     let startY = by + (bh - totalTextH) / 2 + lineH / 2;
 
     lines.forEach((line, i) => {
-        // First line is the "header" — bright yellow; rest white
         g2d.fillStyle = (i === 0) ? "#FFEE44" : "#F0E8C0";
         g2d.font = `bold ${i === 0 ? baseFontSize + 2 : baseFontSize}px 'Courier New', monospace`;
         g2d.fillText(line, bx + bw / 2, startY + i * lineH);
