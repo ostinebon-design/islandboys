@@ -11,16 +11,31 @@
         document.documentElement.style.setProperty("--ctrl-h",   ctrlH   + "px");
         document.documentElement.style.setProperty("--canvas-h", canvasH + "px");
         const cvs = document.getElementById("gameCanvas");
-        if (cvs) cvs.style.height = canvasH + "px";
+        if (cvs) {
+            cvs.style.height = canvasH + "px";
+            // FIX: Also sync pixel dimensions immediately when sizing changes
+            const cssW = cvs.clientWidth || window.innerWidth;
+            const cssH = cvs.clientHeight || canvasH;
+            if (cssW > 0 && cssH > 0) {
+                cvs.width  = cssW;
+                cvs.height = cssH;
+            }
+        }
     }
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", setControllerHeight);
     } else {
         setControllerHeight();
     }
-    window.addEventListener("resize", setControllerHeight);
+    window.addEventListener("resize", () => {
+        setControllerHeight();
+        if (typeof repaintAll === "function" && gameStarted && !gameOver) repaintAll();
+    });
     if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", setControllerHeight);
+        window.visualViewport.addEventListener("resize", () => {
+            setControllerHeight();
+            if (typeof repaintAll === "function" && gameStarted && !gameOver) repaintAll();
+        });
     }
     setTimeout(setControllerHeight, 80);
     setTimeout(setControllerHeight, 400);
@@ -35,8 +50,6 @@
     const introVideo = document.getElementById("introVideo");
     const skipBtn    = document.getElementById("skipIntroBtn");
 
-    // Always show "TAP TO START" first on mobile so the user
-    // has a clear tap target regardless of autoplay policy.
     const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) skipBtn.textContent = "TAP TO START ▶";
 
@@ -51,7 +64,6 @@
     introVideo.addEventListener("ended",   () => { if (videoPlaying) goToHome(); });
     introVideo.addEventListener("error",   () => { /* stay on intro, user taps skip */ });
 
-    // Try autoplay (works on desktop; silently fails on iOS)
     const pp = introVideo.play();
     if (pp !== undefined) {
         pp.catch(() => { skipBtn.textContent = "TAP TO START ▶"; });
@@ -124,12 +136,20 @@ let powerUpImages = Array(3);
 let totalAssets   = Object.keys(assetPaths).length + 6 + 2;
 let loadedAssetsCount = 0;
 
+// FIX: Track asset load completion and repaint if game is already running
 function checkAllAssetsLoaded() {
     loadedAssetsCount++;
     if (loadedAssetsCount === totalAssets) {
         powerUpImages[0] = images['tp'];
         powerUpImages[1] = images['co'];
         powerUpImages[2] = images['sx'];
+        // If the game started before assets finished loading, repaint now
+        if (gameStarted && !gameOver) {
+            requestAnimationFrame(repaintAll);
+        }
+    } else if (gameStarted && !gameOver) {
+        // Repaint progressively as each asset loads (helps on slow mobile connections)
+        requestAnimationFrame(repaintAll);
     }
 }
 
@@ -193,22 +213,37 @@ let p1 = new Player(1, "P1", "red");
 let p2 = new Player(4, "P2", "blue");
 
 // =============================================
-//  CANVAS SCALING
+//  CANVAS + SCALING  (FIX: robust mobile sync)
 // =============================================
 const canvas = document.getElementById("gameCanvas");
 const g2d    = canvas.getContext("2d");
 
+// FIX: Single source of truth for logical game dimensions
+const LOGICAL_W = 600;
+const LOGICAL_H = 1080;
+
 function syncCanvasResolution() {
-    const cssW = canvas.clientWidth  || 600;
-    const cssH = canvas.clientHeight || 1080;
-    if (canvas.width !== cssW || canvas.height !== cssH) {
-        canvas.width  = cssW;
-        canvas.height = cssH;
+    // On mobile the canvas is in a flex column, so clientWidth/Height
+    // reflect the CSS-laid-out size. We copy those to pixel dimensions.
+    const cssW = canvas.clientWidth;
+    const cssH = canvas.clientHeight;
+
+    // Guard: don't set to 0 — that collapses the canvas
+    if (cssW > 0 && cssH > 0) {
+        if (canvas.width !== cssW || canvas.height !== cssH) {
+            canvas.width  = cssW;
+            canvas.height = cssH;
+        }
     }
 }
 
 function applyScale() {
-    g2d.setTransform(canvas.width / 600, 0, 0, canvas.height / 1080, 0, 0);
+    // FIX: Always scale relative to current pixel dimensions vs logical size.
+    // If canvas dimensions are 0 (layout not ready), bail out.
+    const pw = canvas.width;
+    const ph = canvas.height;
+    if (pw === 0 || ph === 0) return;
+    g2d.setTransform(pw / LOGICAL_W, 0, 0, ph / LOGICAL_H, 0, 0);
 }
 
 // =============================================
@@ -238,26 +273,36 @@ window.addEventListener("resize", () => {
 //  EVENT LISTENERS
 // =============================================
 
-// KEY FIX: poll until canvas has real height before starting
+// FIX: More robust start — ensure canvas has real dimensions before resetGame
 document.getElementById("playBtn").addEventListener("click", () => {
     gameStarted = true;
     showScreen("activeGamePanel");
 
     function tryStart(tries) {
         if (window._setSizing) window._setSizing();
-        const h = canvas.clientHeight;
-        if (h > 100 || tries <= 0) {
-            // Force canvas pixel dimensions now that layout is settled
-            canvas.width  = canvas.clientWidth  || 600;
-            canvas.height = canvas.clientHeight || 1080;
+
+        const cssW = canvas.clientWidth;
+        const cssH = canvas.clientHeight;
+
+        // FIX: Check both width AND height are valid before proceeding
+        if ((cssW > 10 && cssH > 100) || tries <= 0) {
+            // Force pixel dimensions now that layout is settled
+            canvas.width  = cssW  || LOGICAL_W;
+            canvas.height = cssH || LOGICAL_H;
             resetGame();
             window.focus();
         } else {
+            // Keep trying — rAF ensures we wait for layout
             requestAnimationFrame(() => tryStart(tries - 1));
         }
     }
-    // Give the browser 2 frames to layout, then start polling
-    requestAnimationFrame(() => requestAnimationFrame(() => tryStart(12)));
+
+    // Give the browser 3 frames to lay out the flex column before polling
+    requestAnimationFrame(() =>
+        requestAnimationFrame(() =>
+            requestAnimationFrame(() => tryStart(20))
+        )
+    );
 });
 
 document.getElementById("homeTutBtn").addEventListener("click",  () => showScreen("tutorialPanel"));
@@ -357,15 +402,23 @@ document.getElementById("powerUpCancelBtn").addEventListener("click", () => {
 });
 
 // =============================================
-//  RENDER ENGINE
+//  RENDER ENGINE  (FIX: guard against 0-size canvas)
 // =============================================
 function repaintAll() {
+    // FIX: Sync pixel size first; if canvas is still 0-sized, schedule a retry
     syncCanvasResolution();
+
+    if (canvas.width === 0 || canvas.height === 0) {
+        // Layout not ready yet — retry next frame
+        requestAnimationFrame(repaintAll);
+        return;
+    }
+
     applyScale();
 
-    g2d.clearRect(0, 0, 600, 1080);
+    g2d.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
     g2d.fillStyle = "#000";
-    g2d.fillRect(0, 0, 600, 1080);
+    g2d.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 
     if (images.gameBg?.complete  && images.gameBg.naturalWidth  > 0) g2d.drawImage(images.gameBg,  0,   0,   600, 1080);
     if (images.island?.complete  && images.island.naturalWidth  > 0) g2d.drawImage(images.island,  75,  0,   450, 280);
@@ -576,6 +629,8 @@ function resetGame() {
     targetGoal=Math.floor(Math.random()*101);
     if (window._setSizing) window._setSizing();
     randomizeGrid();
+    // FIX: Force a fresh sync after reset to guarantee canvas has pixel dimensions
+    syncCanvasResolution();
     repaintAll();
 }
 
