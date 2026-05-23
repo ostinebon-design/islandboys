@@ -30,7 +30,7 @@ body {
         max-width: 100vw;
         max-height: 100vh;
     }
-    
+
     #gameCanvas {
         width: 100% !important;
         height: calc(100vh - 140px) !important;
@@ -252,15 +252,6 @@ body {
     transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
 }
 
-#gamePauseBtn {
-    width: 50px;
-    height: 50px;
-    left: 530px;
-    top: 130px;
-    background-image: url('assets/pause.png');
-    z-index: 5;
-}
-
 /* SUSPENSION MENU MODAL GRAPHICS MANAGEMENT OVERLAYS */
 .overlay {
     display: none;
@@ -287,7 +278,7 @@ body {
     width: 150px;
     height: 150px;
     left: 125px;
-    top: 90px; 
+    top: 90px;
     background-image: url('assets/playbutton.png');
 }
 
@@ -295,11 +286,222 @@ body {
     width: 150px;
     height: 150px;
     left: 125px;
-    top: 240px; 
+    top: 240px;
     background-image: url('assets/home.png');
 }
 
-/* MOBILE CONTROL BUTTONS */
+/* =============================================
+   POWER-UP OVERLAY — JUNGLE BOARD AESTHETIC
+   ============================================= */
+.powerup-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 20;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+.powerup-panel {
+    position: absolute;
+    left: 50%;
+    bottom: 10%;
+    transform: translateX(-50%);
+    width: min(92%, 370px);
+    max-width: 370px;
+    padding: 0;
+    background: transparent;
+}
+
+/* Jungle board card frame */
+.powerup-card {
+    display: none;
+    position: relative;
+    width: 100%;
+    padding: 22px 20px 22px;
+    /* Outer mossy border */
+    background: #3d2810;
+    border: 6px solid #4a8a2a;
+    border-radius: 14px;
+    box-shadow:
+        0 0 0 3px #2a5a14,
+        0 0 0 9px #3a7020,
+        inset 0 0 0 3px #251508,
+        0 12px 40px rgba(0, 0, 0, 0.8),
+        0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+/* Crown icon on top */
+.powerup-card::before {
+    content: "👑";
+    position: absolute;
+    top: -26px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 30px;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9));
+    z-index: 2;
+}
+
+/* Inner wooden board surface */
+.powerup-card::after {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    background: linear-gradient(160deg, #6b4a28 0%, #5a3a1a 40%, #4a2e10 100%);
+    border-radius: 8px;
+    border: 2px solid #8a6030;
+    z-index: 0;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.teleport-card {
+    display: block;
+}
+
+/* Stone medallion with question mark */
+.powerup-medallion {
+    position: relative;
+    z-index: 1;
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 12px;
+    background: radial-gradient(circle at 38% 32%,
+        #9a8a70 0%,
+        #7a6a50 35%,
+        #5a4a30 65%,
+        #3a2a15 100%
+    );
+    border-radius: 50%;
+    border: 3px solid #aa9060;
+    box-shadow:
+        inset 0 3px 10px rgba(0, 0, 0, 0.55),
+        inset 0 -2px 6px rgba(255, 255, 255, 0.08),
+        0 5px 15px rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    color: #d8c890;
+    font-weight: 900;
+    font-family: 'Courier New', monospace;
+    text-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.7),
+        0 0 12px rgba(200, 170, 80, 0.4);
+}
+
+/* Instruction label text */
+.powerup-label {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    color: #e8d8a8;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    letter-spacing: 0.3px;
+    line-height: 1.5;
+}
+
+/* Button grid layouts */
+.powerup-buttons {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 8px;
+    width: 100%;
+    justify-items: stretch;
+}
+
+.teleport-buttons {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.operator-buttons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Wooden plank buttons */
+.powerup-btn {
+    width: 100%;
+    height: 50px;
+    border: 2px solid #7a5030;
+    border-radius: 8px;
+    /* Layered wood-grain gradient */
+    background-image:
+        repeating-linear-gradient(
+            88deg,
+            transparent,
+            transparent 16px,
+            rgba(0, 0, 0, 0.045) 16px,
+            rgba(0, 0, 0, 0.045) 17px
+        ),
+        linear-gradient(180deg,
+            #dac09a 0%,
+            #c4a070 18%,
+            #b08050 50%,
+            #9a6e3a 82%,
+            #8a5e2a 100%
+        );
+    color: #2c1810;
+    font-size: 16px;
+    font-weight: 900;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.38);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.28),
+        0 5px 0 #5a3a18,
+        0 6px 10px rgba(0, 0, 0, 0.45);
+    transition: transform 0.08s ease, box-shadow 0.08s ease, background-image 0.08s ease;
+}
+
+.powerup-btn:hover {
+    background-image:
+        repeating-linear-gradient(
+            88deg,
+            transparent,
+            transparent 16px,
+            rgba(0, 0, 0, 0.045) 16px,
+            rgba(0, 0, 0, 0.045) 17px
+        ),
+        linear-gradient(180deg,
+            #ead4b0 0%,
+            #d4b080 18%,
+            #c09060 50%,
+            #aa7e4a 82%,
+            #9a6e3a 100%
+        );
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.22),
+        0 6px 0 #5a3a18,
+        0 7px 12px rgba(0, 0, 0, 0.5);
+}
+
+.powerup-btn:active {
+    transform: translateY(4px);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.32),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.22),
+        0 1px 0 #5a3a18,
+        0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.panel-cancel-btn {
+    display: none;
+}
+
+/* =============================================
+   MOBILE CONTROL BUTTONS
+   ============================================= */
 .mobile-controls-container {
     display: none;
     position: absolute;
@@ -349,18 +551,18 @@ body {
     font-weight: 900;
     cursor: pointer;
     transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), 0 4px 0 rgba(0,0,0,0.15);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 0 4px 0 rgba(0, 0, 0, 0.15);
 }
 
 .move-btn:hover {
     transform: scale(1.02);
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45), 0 5px 0 rgba(0,0,0,0.2);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 5px 0 rgba(0, 0, 0, 0.2);
     background: linear-gradient(180deg, #ffffff 0%, #d9e4ff 100%);
 }
 
 .move-btn:active {
     transform: translateY(1px);
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3), 0 2px 0 rgba(0,0,0,0.2);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3), 0 2px 0 rgba(0, 0, 0, 0.2);
     background: linear-gradient(180deg, #dbe6ff 0%, #b8ccff 100%);
 }
 
@@ -368,10 +570,6 @@ body {
     grid-column: 1 / -1;
     grid-row: 1;
     margin: 0 auto;
-}
-
-.move-row {
-    display: contents;
 }
 
 .move-left {
@@ -434,8 +632,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), 0 4px 0 rgba(0,0,0,0.2);
-    background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(230,230,230,0.98) 100%);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 0 4px 0 rgba(0, 0, 0, 0.2);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 230, 230, 0.98) 100%);
 }
 
 .accept-btn {
