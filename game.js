@@ -18,6 +18,7 @@ let waitingForPowerUpChoice = false;
 let waitingToRollPowerUp = false;
 let powerUpRecipient = null;
 let preRolledPowerUp = "";
+let isPowerUpPanelActive = false;
 
 // --- TELEPORT STATE VARIABLES ---
 let isTeleportPending = false;
@@ -26,6 +27,12 @@ let pendingTeleportDirection = -1; // 0 = Left, 1 = Top, 2 = Right
 // --- DOUBLE TILE STATE VARIABLES ---
 let p1HasDoubleTile = false;
 let p2HasDoubleTile = false;
+
+// --- GAME OVER SCREEN DATA ---
+let gameOverWinner = "";
+let gameOverTargetGoal = 0;
+let gameOverP1Score = 0;
+let gameOverP2Score = 0;
 
 // --- DYNAMIC RENDERING ANIMATION CONTROLLERS ---
 let animationFrames = 0;
@@ -44,29 +51,28 @@ const assetPaths = {
     blue: 'assets/blue.png',
     tp: 'assets/tp.png',
     co: 'assets/co.jpg',
-    sx: 'assets/sx.png'
+    sx: 'assets/sx.png',
+    player1wins: 'assets/player1wins.webp',
+    player2wins: 'assets/player2wins.webp'
 };
 
-// Procedural arrays map variables inside processing calculations loops
 let diceImages = Array(6);
 let opDiceImages = Array(2);
 let powerUpImages = Array(3);
 
-let totalAssets = Object.keys(assetPaths).length + 6 + 2; 
+let totalAssets = Object.keys(assetPaths).length + 6 + 2;
 let loadedAssetsCount = 0;
 
 function checkAllAssetsLoaded() {
     loadedAssetsCount++;
     if (loadedAssetsCount === totalAssets) {
         console.log("All execution source assets stored safely.");
-        // Link the indexed structural references exactly as NetBeans structures did
         powerUpImages[0] = images['tp'];
         powerUpImages[1] = images['co'];
         powerUpImages[2] = images['sx'];
     }
 }
 
-// Map the dynamic references matching numerical lookups inside animations loops
 function loadGameAssets() {
     for (let key in assetPaths) {
         images[key] = new Image();
@@ -189,7 +195,8 @@ window.addEventListener("keydown", (e) => {
     if (["arrowup", "arrowleft", "arrowright", "w", "a", "d", "y", "n"].includes(keyLower)) {
         e.preventDefault();
     }
-    
+
+    if (isPowerUpPanelActive) return;
     if (waitingForPowerUpChoice) {
         if (keyLower === 'y') {
             applyRandomPowerUp(powerUpRecipient);
@@ -247,13 +254,45 @@ document.getElementById("declineBtn").addEventListener("click", () => {
     }
 });
 
+document.getElementById("powerUpOverlay").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("powerUpOverlay")) {
+        hidePowerUpPanel();
+    }
+});
+
+document.querySelectorAll(".powerup-btn[data-teleport]").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const dir = btn.dataset.teleport;
+        handleTeleportChoice(dir);
+    });
+});
+
+document.querySelectorAll(".powerup-btn[data-operator]").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const op = btn.dataset.operator;
+        handleOperatorChoice(op);
+    });
+});
+
+document.getElementById("powerUpCancelBtn").addEventListener("click", () => {
+    if (isPowerUpPanelActive) {
+        systemMessage = "💨 " + (powerUpRecipient ? powerUpRecipient.name : "Player") + " DECLINED. Roll Operation!";
+        hidePowerUpPanel();
+        waitingForPowerUpChoice = false;
+        powerUpRecipient = null;
+        preRolledPowerUp = "";
+        currentDiceImg = null;
+        repaintAll();
+    }
+});
+
 // --- CORE RENDERING ENGINE CALCULATIONS MAPS ---
 function repaintAll() {
     g2d.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     g2d.fillStyle = "#000000";
     g2d.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     if (images.gameBg && images.gameBg.complete) {
         g2d.drawImage(images.gameBg, 0, 0, canvas.width, canvas.height);
     }
@@ -267,7 +306,7 @@ function repaintAll() {
     drawTargetSign(g2d, (canvas.width / 2) - 60, 195, String(targetGoal));
     let displayRound = (currentTurn === 1) ? roundP1 : roundP2;
     drawRoundSign(g2d, (canvas.width / 2) - 60, 250, "ROUND " + displayRound);
-    
+
     renderGrid(g2d);
 
     if (!isAnimating) {
@@ -286,7 +325,7 @@ function repaintAll() {
             g2d.fillStyle = "rgba(0, 0, 0, 0.78)";
             g2d.fillRect(40, 340, 520, 140);
             g2d.fillStyle = "#FFFF00";
-            
+
             if (systemMessage.includes("\n")) {
                 g2d.font = "bold 16px Arial";
                 let lines = systemMessage.split("\n");
@@ -306,6 +345,10 @@ function repaintAll() {
         g2d.drawImage(currentDiceImg, canvas.width / 2 - 50, canvas.height - 180, 100, 100);
     }
     drawScoreBoards(g2d);
+
+    if (gameOver) {
+        drawGameOverScreen(g2d);
+    }
 }
 
 function renderGrid(g2d) {
@@ -347,12 +390,11 @@ function renderGrid(g2d) {
             }
         }
     }
-drawPlayerAtPos(g2d, p1, seaStartY, seaEndY, topW, botW, centerX);
-drawPlayerAtPos(g2d, p2, seaStartY, seaEndY, topW, botW, centerX);
+    drawPlayerAtPos(g2d, p1, seaStartY, seaEndY, topW, botW, centerX);
+    drawPlayerAtPos(g2d, p2, seaStartY, seaEndY, topW, botW, centerX);
 }
 
 function drawPlayerAtPos(g2d, p, seaStartY, seaEndY, topW, botW, centerX) {
-
     let progT = Math.min(p.row, ROWS - 1) / ROWS;
     let progB = (Math.min(p.row, ROWS - 1) + 1) / ROWS;
 
@@ -378,7 +420,6 @@ function drawPlayerAtPos(g2d, p, seaStartY, seaEndY, topW, botW, centerX) {
 }
 
 function drawPlayer(g2d, xL1, xR1, xL2, xR2, y1, y2, img) {
-
     if (!img || !img.complete) return;
 
     let w = (xR1 - xL1 + xR2 - xL2) / 2;
@@ -394,9 +435,7 @@ function drawPlayer(g2d, xL1, xR1, xL2, xR2, y1, y2, img) {
 }
 
 // --- SIGN RENDER FORMATTING ---
-
 function drawSign(g2d, x, y, l1, l2, pc) {
-
     if (images.scoreBgImg && images.scoreBgImg.complete) {
         g2d.drawImage(images.scoreBgImg, x, y, 180, 80);
     } else {
@@ -414,7 +453,6 @@ function drawSign(g2d, x, y, l1, l2, pc) {
 }
 
 function drawTargetSign(g2d, x, y, text) {
-
     if (images.scoreBgImg && images.scoreBgImg.complete) {
         g2d.drawImage(images.scoreBgImg, x, y, 120, 50);
     } else {
@@ -433,7 +471,6 @@ function drawTargetSign(g2d, x, y, text) {
 }
 
 function drawRoundSign(g2d, x, y, text) {
-
     y -= 10;
 
     if (images.scoreBgImg && images.scoreBgImg.complete) {
@@ -453,11 +490,9 @@ function drawRoundSign(g2d, x, y, text) {
     );
 
     try {
-
         let currentRoundNum = parseInt(text.replace(/[^0-9]/g, ""));
 
         if ((currentRoundNum + 1) % 3 === 0) {
-
             let warningText = "⚠️ POWER-UP NEXT!";
 
             g2d.font = "bold 12px Arial";
@@ -475,12 +510,10 @@ function drawRoundSign(g2d, x, y, text) {
                 y + 50
             );
         }
-
     } catch (e) {}
 }
 
 function drawScoreBoards(g2d) {
-
     drawSign(
         g2d,
         15,
@@ -500,21 +533,95 @@ function drawScoreBoards(g2d) {
     );
 }
 
+// --- FIXED GAME OVER SCREEN — uses player1wins.webp / player2wins.webp as panel ---
+function drawGameOverScreen(g2d) {
+    // Dim the game board behind the panel
+    g2d.fillStyle = "rgba(0, 0, 0, 0.72)";
+    g2d.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Pick the correct webp image based on winner
+    let panelImg = null;
+    if (gameOverWinner === "PLAYER 1 WINS!") {
+        panelImg = images['player1wins'];
+    } else if (gameOverWinner === "PLAYER 2 WINS!") {
+        panelImg = images['player2wins'];
+    }
+
+    // Panel dimensions & position — centered on canvas
+    // The webp images are landscape (approx 960x560 native ratio)
+    // We render them at a comfortable size inside the 600x1080 canvas
+    let panelW = 560;
+    let panelH = 340;
+    let panelX = (canvas.width - panelW) / 2;   // = 20
+    let panelY = 310;
+
+    // Draw the webp image (jungle board with crown, star, frame, "PLAYER X WINS")
+    if (panelImg && panelImg.complete && panelImg.naturalWidth > 0) {
+        g2d.drawImage(panelImg, panelX, panelY, panelW, panelH);
+    } else {
+        // Fallback: draw a simple panel if image hasn't loaded
+        g2d.fillStyle = "#2d7a2d";
+        g2d.fillRect(panelX, panelY, panelW, panelH);
+        g2d.fillStyle = "#6b4423";
+        g2d.fillRect(panelX + 14, panelY + 14, panelW - 28, panelH - 28);
+
+        g2d.save();
+        g2d.textAlign = "center";
+        g2d.font = "bold 36px Arial";
+        g2d.fillStyle = "#FFFFFF";
+        g2d.fillText(gameOverWinner, panelX + panelW / 2, panelY + 100);
+        g2d.restore();
+    }
+
+    // --- Draw scores on top of the image ---
+    // The webp already shows "Target:", "P1:", "P2:" labels in the lower-left area.
+    // We draw the actual values to the RIGHT of those labels.
+    // Based on the image layout, labels start around x=110 from panel left,
+    // and the three rows sit at roughly 67%, 76%, 85% down the panel height.
+
+    g2d.save();
+    g2d.textAlign = "left";
+
+    // Positions tuned to match label positions inside the webp artwork
+    let valX = panelX + 185;   // just right of the "Target:" / "P1:" / "P2:" text in the image
+    let targetY = panelY + panelH * 0.665;  // ~226px below panelY
+    let p1Y     = panelY + panelH * 0.760;  // ~258px below panelY
+    let p2Y     = panelY + panelH * 0.855;  // ~291px below panelY
+
+    // White text with dark shadow for readability over the image
+    g2d.shadowColor = "rgba(0,0,0,0.95)";
+    g2d.shadowBlur = 6;
+    g2d.shadowOffsetX = 2;
+    g2d.shadowOffsetY = 2;
+
+    // Target value
+    g2d.font = "bold 22px 'Courier New', monospace";
+    g2d.fillStyle = "#FFFF55";
+    g2d.fillText(String(gameOverTargetGoal), valX, targetY);
+
+    // P1 value
+    g2d.fillStyle = "#FF8888";
+    g2d.fillText(String(gameOverP1Score), valX, p1Y);
+
+    // P2 value
+    g2d.fillStyle = "#88AAFF";
+    g2d.fillText(String(gameOverP2Score), valX, p2Y);
+
+    g2d.restore();
+}
+
+// Star is now part of the player1wins.webp / player2wins.webp images
+
 // --- ENGINE REACTION MECHANICS ---
-
 function randomizeGrid() {
-
     for (let r = 0; r < ROWS; r++) {
-
         for (let c = 0; c < COLS; c++) {
-
             gridNumbers[r][c] = Math.floor(Math.random() * 10);
         }
     }
 }
 
 function resetGame() {
-
     p1.stopTimer();
     p2.stopTimer();
 
@@ -529,186 +636,119 @@ function resetGame() {
     p2.timeLeft = 300;
 
     currentTurn = 1;
-
     roundP1 = 1;
     roundP2 = 1;
-
     movesThisTurn = 0;
-
     p1MovedThisRound = false;
     p2MovedThisRound = false;
-
     needsToRollOp = true;
     isDecidingTurn = true;
-
     p1StartRoll = 0;
     p2StartRoll = 0;
-
     rollingForPlayer = 1;
-
     gameOver = false;
     isPaused = false;
-
     systemMessage = "";
-
     waitingForPowerUpChoice = false;
     waitingToRollPowerUp = false;
-
     powerUpRecipient = null;
-
     preRolledPowerUp = "";
-
     isTeleportPending = false;
     pendingTeleportDirection = -1;
-
     p1HasDoubleTile = false;
     p2HasDoubleTile = false;
-
     currentDiceImg = null;
+
+    // Reset game over screen data
+    gameOverWinner = "";
+    gameOverTargetGoal = 0;
+    gameOverP1Score = 0;
+    gameOverP2Score = 0;
 
     targetGoal = Math.floor(Math.random() * 101);
 
     randomizeGrid();
-
     repaintAll();
 }
 
 function startDiceAnimation() {
-
     setRollButtonsDisabled(false);
 
     isAnimating = true;
     animationFrames = 0;
 
     let animTimer = setInterval(() => {
-
         animationFrames++;
 
         if (isDecidingTurn) {
-
             currentDiceImg = diceImages[Math.floor(Math.random() * 6)];
-
         } else {
-
             currentDiceImg = opDiceImages[Math.floor(Math.random() * 2)];
         }
 
         repaintAll();
 
         if (animationFrames > 12) {
-
             clearInterval(animTimer);
-
             finalizeRoll();
         }
-
     }, 80);
 }
 
 function finalizeRoll() {
-
     if (isDecidingTurn) {
-
         let rollValue = Math.floor(Math.random() * 6) + 1;
 
-        let ongoingRound = (rollingForPlayer === 1)
-            ? roundP1
-            : roundP2;
+        let ongoingRound = (rollingForPlayer === 1) ? roundP1 : roundP2;
 
         if (rollingForPlayer === 1) {
-
             p1StartRoll = rollValue;
 
             if (ongoingRound > 1 && p1StartRoll === 1) {
-
                 p2StartRoll = -1;
-
-                systemMessage =
-                    "🎲 P1 rolled 1 in Round " +
-                    ongoingRound +
-                    "! Moving first.";
-
+                systemMessage = "🎲 P1 rolled 1 in Round " + ongoingRound + "! Moving first.";
             } else if (p2StartRoll === 0) {
-
                 rollingForPlayer = 2;
             }
-
         } else {
-
             p2StartRoll = rollValue;
 
             if (ongoingRound > 1 && p2StartRoll === 1) {
-
                 p1StartRoll = -1;
-
-                systemMessage =
-                    "🎲 P2 rolled 1 in Round " +
-                    ongoingRound +
-                    "! Moving first.";
-
+                systemMessage = "🎲 P2 rolled 1 in Round " + ongoingRound + "! Moving first.";
             } else if (p1StartRoll === 0) {
-
                 rollingForPlayer = 1;
             }
         }
 
         if (p1StartRoll !== 0 && p2StartRoll !== 0) {
-
-            if (
-                p1StartRoll === p2StartRoll &&
-                p1StartRoll > 0
-            ) {
-
+            if (p1StartRoll === p2StartRoll && p1StartRoll > 0) {
                 p1StartRoll = 0;
                 p2StartRoll = 0;
-
-                rollingForPlayer =
-                    (p1.timeLeft >= p2.timeLeft) ? 1 : 2;
-
+                rollingForPlayer = (p1.timeLeft >= p2.timeLeft) ? 1 : 2;
             } else {
-
-                currentTurn =
-                    (p1StartRoll < p2StartRoll) ? 1 : 2;
-
+                currentTurn = (p1StartRoll < p2StartRoll) ? 1 : 2;
                 isDecidingTurn = false;
 
-                let currentRound =
-                    (currentTurn === 1)
-                        ? roundP1
-                        : roundP2;
+                let currentRound = (currentTurn === 1) ? roundP1 : roundP2;
 
                 if (currentRound % 3 === 0) {
-
                     triggerPowerUpIntegrated();
-
                 } else {
-
-                    systemMessage =
-                        "Player " +
-                        currentTurn +
-                        " moves first! Roll Operation.";
+                    systemMessage = "Player " + currentTurn + " moves first! Roll Operation.";
                 }
             }
         }
-
     } else {
-
         let opRoll = Math.floor(Math.random() * 2);
-
         currentOperation = (opRoll === 0) ? "+" : "-";
-
         currentDiceImg = opDiceImages[opRoll];
-
         needsToRollOp = false;
-
         systemMessage = "";
 
         if (isTeleportPending) {
-
             executePendingTeleport();
-
         } else {
-
             if (currentTurn === 1) {
                 p1.startTimer();
             } else {
@@ -718,53 +758,32 @@ function finalizeRoll() {
     }
 
     isAnimating = false;
-
     setRollButtonsDisabled(true);
-
     repaintAll();
 }
 
 // --- POWER-UP RULES ENGINE ---
-
 function triggerPowerUpIntegrated() {
+    powerUpRecipient = (currentTurn === 1) ? p1 : p2;
 
-    powerUpRecipient = (currentTurn === 1)
-        ? p1
-        : p2;
-
-    let activeRound = (currentTurn === 1)
-        ? roundP1
-        : roundP2;
+    let activeRound = (currentTurn === 1) ? roundP1 : roundP2;
 
     waitingToRollPowerUp = true;
-
     needsToRollOp = true;
 
     systemMessage =
-        "🎰 " +
-        powerUpRecipient.name +
-        " moves first in Round " +
-        activeRound +
+        "🎰 " + powerUpRecipient.name + " moves first in Round " + activeRound +
         "!\nClick 'ROLL' to spin for a Power-Up!";
 }
 
 function startPowerUpAnimation() {
-
     waitingToRollPowerUp = false;
 
-    let powerUps = [
-        "Teleport",
-        "Operation Changer",
-        "Double",
-        "No Power Up"
-    ];
+    let powerUps = ["Teleport", "Operation Changer", "Double", "No Power Up"];
 
-    preRolledPowerUp =
-        powerUps[Math.floor(Math.random() * powerUps.length)];
+    preRolledPowerUp = powerUps[Math.floor(Math.random() * powerUps.length)];
 
-    let activeRound = (currentTurn === 1)
-        ? roundP1
-        : roundP2;
+    let activeRound = (currentTurn === 1) ? roundP1 : roundP2;
 
     isRollingPowerUp = true;
     isAnimating = true;
@@ -774,22 +793,14 @@ function startPowerUpAnimation() {
     let frames = 0;
 
     let pTimer = setInterval(() => {
-
         frames++;
 
         if (frames <= 14) {
-
             let loadedKeys = ["tp", "co", "sx"];
-
-            let randKey =
-                loadedKeys[Math.floor(Math.random() * loadedKeys.length)];
-
+            let randKey = loadedKeys[Math.floor(Math.random() * loadedKeys.length)];
             currentDiceImg = images[randKey];
-
             repaintAll();
-
         } else {
-
             clearInterval(pTimer);
 
             isRollingPowerUp = false;
@@ -815,7 +826,6 @@ function startPowerUpAnimation() {
 
             repaintAll();
         }
-
     }, 80);
 }
 
@@ -864,9 +874,7 @@ function endTurn() {
     } else {
         needsToRollOp = true;
         let nextRound = (currentTurn === 1) ? roundP1 : roundP2;
-        systemMessage = (nextRound % 3 === 0)
-            ? "⚠️ INCOMING POWER-UP ROUND!"
-            : "";
+        systemMessage = (nextRound % 3 === 0) ? "⚠️ INCOMING POWER-UP ROUND!" : "";
     }
 
     repaintAll();
@@ -1012,16 +1020,35 @@ function applyRandomPowerUp(recipient) {
 }
 
 function showTeleportPanel(recipient) {
-    let choice = prompt("Choose teleport direction:\nL = LEFT\nT = TOP\nR = RIGHT", "T");
-    if (!choice) choice = "T";
-    choice = choice.trim().toUpperCase();
+    powerUpRecipient = recipient;
+    waitingForPowerUpChoice = false;
+    isPowerUpPanelActive = true;
+    document.getElementById("powerUpOverlay").style.display = "block";
+    document.getElementById("teleportPanel").style.display = "block";
+    document.getElementById("operatorPanel").style.display = "none";
+}
 
+function showOperationPanel(recipient) {
+    powerUpRecipient = recipient;
+    waitingForPowerUpChoice = false;
+    isPowerUpPanelActive = true;
+    document.getElementById("powerUpOverlay").style.display = "block";
+    document.getElementById("teleportPanel").style.display = "none";
+    document.getElementById("operatorPanel").style.display = "block";
+}
+
+function hidePowerUpPanel() {
+    isPowerUpPanelActive = false;
+    document.getElementById("powerUpOverlay").style.display = "none";
+}
+
+function handleTeleportChoice(choice) {
     let direction = 1;
     let dirName = "TOP";
-    if (choice.startsWith("L")) {
+    if (choice === "L") {
         direction = 0;
         dirName = "LEFT";
-    } else if (choice.startsWith("R")) {
+    } else if (choice === "R") {
         direction = 2;
         dirName = "RIGHT";
     }
@@ -1032,24 +1059,20 @@ function showTeleportPanel(recipient) {
     systemMessage = "🌀 Teleport " + dirName + " locked! Now click 'ROLL' to see your operation.";
     preRolledPowerUp = "";
     powerUpRecipient = null;
-    waitingForPowerUpChoice = false;
+    hidePowerUpPanel();
     repaintAll();
 }
 
-function showOperationPanel(recipient) {
-    let choice = prompt("Choose operator:\n+ - * /", "+");
-    if (!choice) choice = "+";
-    choice = choice.trim();
+function handleOperatorChoice(choice) {
     if (!["+", "-", "*", "/"].includes(choice)) choice = "+";
-
     currentOperation = choice;
     currentDiceImg = null;
     needsToRollOp = false;
     waitingForPowerUpChoice = false;
     preRolledPowerUp = "";
     powerUpRecipient = null;
-    systemMessage = recipient.name + " chose operator " + currentOperation + ". Use arrow keys to move.";
-
+    systemMessage = "Operation changed to " + currentOperation + ". Use arrow keys to move.";
+    hidePowerUpPanel();
     if (currentTurn === 1) p1.startTimer(); else p2.startTimer();
     repaintAll();
 }
@@ -1063,6 +1086,7 @@ function applyOperation(player, tileValue) {
     }
 }
 
+// --- FIXED WIN CONDITION — stores all data before repaint ---
 function checkWinCondition() {
     gameOver = true;
     p1.stopTimer();
@@ -1075,6 +1099,11 @@ function checkWinCondition() {
     if (p1Diff < p2Diff) winner = "PLAYER 1 WINS!";
     else if (p2Diff < p1Diff) winner = "PLAYER 2 WINS!";
 
-    alert(winner + "\nTarget: " + targetGoal + "\nP1: " + p1.currentTotal + "\nP2: " + p2.currentTotal);
+    // Store all game over data for canvas rendering BEFORE repaintAll
+    gameOverWinner = winner;
+    gameOverTargetGoal = targetGoal;
+    gameOverP1Score = p1.currentTotal;
+    gameOverP2Score = p2.currentTotal;
+
     repaintAll();
 }
