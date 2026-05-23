@@ -48,7 +48,7 @@
             <canvas id="gameCanvas" width="600" height="1080"></canvas>
             <button id="rollBtn" class="action-trigger"></button>
             <button id="gamePauseBtn" class="action-trigger"></button>
-            
+
             <!-- MOBILE CONTROL BUTTONS -->
             <div id="mobileControls" class="mobile-controls-container">
                 <div class="movement-pad">
@@ -60,6 +60,32 @@
                 <div class="decision-pad">
                     <button id="acceptBtn" class="decision-btn accept-btn" title="Accept (Y)">Y</button>
                     <button id="declineBtn" class="decision-btn decline-btn" title="Decline (N)">N</button>
+                </div>
+            </div>
+
+            <!-- POWER-UP OVERLAY PANEL -->
+            <div id="powerUpOverlay" class="overlay powerup-overlay">
+                <div id="powerUpPanel" class="powerup-panel">
+                    <div id="teleportPanel" class="powerup-card teleport-card">
+                        <div class="powerup-medallion">?</div>
+                        <div class="powerup-label">Select the direction to choose<br>(Will step after rolling operator):</div>
+                        <div class="powerup-buttons teleport-buttons">
+                            <button class="powerup-btn" data-teleport="L">◀ LEFT</button>
+                            <button class="powerup-btn" data-teleport="T">▲ TOP</button>
+                            <button class="powerup-btn" data-teleport="R">RIGHT ▶</button>
+                        </div>
+                    </div>
+                    <div id="operatorPanel" class="powerup-card operator-card">
+                        <div class="powerup-medallion">⚙</div>
+                        <div class="powerup-label">Choose your operation:</div>
+                        <div class="powerup-buttons operator-buttons">
+                            <button class="powerup-btn" data-operator="+">+</button>
+                            <button class="powerup-btn" data-operator="-">−</button>
+                            <button class="powerup-btn" data-operator="*">×</button>
+                            <button class="powerup-btn" data-operator="/">/</button>
+                        </div>
+                    </div>
+                    <button id="powerUpCancelBtn" class="panel-cancel-btn">CANCEL</button>
                 </div>
             </div>
         </div>
