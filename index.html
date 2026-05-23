@@ -8,8 +8,15 @@
 </head>
 <body>
     <div id="containerPanel">
+
+        <!-- INTRO VIDEO SCREEN -->
+        <div id="introPanel" class="screen active">
+            <video id="introVideo" src="assets/introclip.mp4" playsinline muted></video>
+            <button id="skipIntroBtn">SKIP ▶</button>
+        </div>
+
         <!-- HOME MOVEMENT SCREEN -->
-        <div id="homePanel" class="screen active">
+        <div id="homePanel" class="screen">
             <button id="playBtn" class="action-trigger"></button>
             <button id="homeTutBtn" class="action-trigger"></button>
             <button id="homeExitBtn" class="action-trigger"></button>
@@ -46,8 +53,12 @@
         <!-- THE MAIN ACTIVE GAME INTERFACE FRAME -->
         <div id="activeGamePanel" class="screen">
             <canvas id="gameCanvas" width="600" height="1080"></canvas>
-            <button id="rollBtn" class="action-trigger"></button>
+
+            <!-- Pause button sits ABOVE canvas via z-index -->
             <button id="gamePauseBtn" class="action-trigger"></button>
+
+            <!-- Desktop roll button -->
+            <button id="rollBtn" class="action-trigger"></button>
 
             <!-- MOBILE CONTROLLER — buttons float directly over controller.png -->
             <div id="mobileControls" class="mobile-controls-container">
