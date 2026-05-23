@@ -25,9 +25,9 @@ body {
 @media (max-width: 768px) {
     #containerPanel {
         width: 100vw;
-        height: 100vh;
+        height: 100dvh;
         max-width: 100vw;
-        max-height: 100vh;
+        max-height: 100dvh;
     }
 }
 
@@ -82,10 +82,12 @@ body {
     transition: background 0.18s, color 0.18s, transform 0.12s;
 }
 
-#skipIntroBtn:hover  { background: rgba(255, 233, 122, 0.22); transform: scale(1.06); }
-#skipIntroBtn:active { transform: scale(0.97); background: rgba(255, 233, 122, 0.35); }
+#skipIntroBtn:hover  { background: rgba(255,233,122,0.22); transform: scale(1.06); }
+#skipIntroBtn:active { transform: scale(0.97); background: rgba(255,233,122,0.35); }
 
-/* BACKGROUNDS */
+/* =============================================
+   HOME / TUTORIAL SCREENS
+   ============================================= */
 #homePanel {
     background: url('assets/homebg.jpg') no-repeat center center;
     background-size: 100% 100%;
@@ -112,14 +114,26 @@ body {
 }
 
 .action-trigger:hover  { transform: translateY(-2px) scale(1.04); filter: brightness(1.12); }
-.action-trigger:active { transform: translateY(0px) scale(0.98); filter: brightness(0.96); }
+.action-trigger:active { transform: translateY(0px) scale(0.98);  filter: brightness(0.96); }
 
-/* HOME BUTTONS — desktop */
-#playBtn     { width: 180px; height: 180px; left: 210px; top: 450px; background-image: url('assets/playbutton.png'); }
-#homeTutBtn  { width: 60px;  height: 60px;  left: 530px; top: 20px;  background-image: url('assets/tutorial.png'); }
-#homeExitBtn { width: 100px; height: 70px;  left: 250px; top: 650px; background-image: url('assets/back.png'); }
+#playBtn {
+    width: 180px; height: 180px;
+    left: 210px;  top: 450px;
+    background-image: url('assets/playbutton.png');
+}
 
-/* HOME BUTTONS — mobile */
+#homeTutBtn {
+    width: 60px; height: 60px;
+    left: 530px; top: 20px;
+    background-image: url('assets/tutorial.png');
+}
+
+#homeExitBtn {
+    width: 100px; height: 70px;
+    left: 250px;  top: 650px;
+    background-image: url('assets/back.png');
+}
+
 @media (max-width: 768px) {
     #playBtn {
         width: 26vw; height: 26vw;
@@ -129,7 +143,10 @@ body {
     #playBtn:hover  { transform: translateX(-50%) translateY(-2px) scale(1.04); }
     #playBtn:active { transform: translateX(-50%) translateY(0px)  scale(0.98); }
 
-    #homeTutBtn { width: 9vw; height: 9vw; left: auto; right: 3vw; top: 2.5vh; }
+    #homeTutBtn {
+        width: 9vw; height: 9vw;
+        left: auto; right: 3vw; top: 2.5vh;
+    }
 
     #homeExitBtn {
         width: 16vw; height: 11vw;
@@ -140,7 +157,6 @@ body {
     #homeExitBtn:active { transform: translateX(-50%) translateY(0px)  scale(0.98); }
 }
 
-/* TUTORIAL BUTTON */
 #tutBackBtn {
     width: 100px; height: 100px;
     left: 20px; top: 20px;
@@ -159,11 +175,7 @@ body {
 }
 
 /* =============================================
-   GAME SCREEN
-   Desktop: canvas is absolute, fills the panel.
-   Mobile:  panel is a flex column.
-            canvas height = 100vh - controller height
-            (set by JS via --ctrl-h CSS variable).
+   GAME SCREEN — CANVAS + OVERLAID BUTTONS
    ============================================= */
 #activeGamePanel {
     position: relative;
@@ -173,36 +185,34 @@ body {
     overflow: hidden;
 }
 
-/* Desktop canvas */
-#gameCanvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    display: block;
-}
-
-/* Mobile overrides */
+/* On mobile: flex column so canvas fills above controller */
 @media (max-width: 768px) {
     #activeGamePanel {
         display: flex;
         flex-direction: column;
+        height: 100dvh;
+        overflow: hidden;
     }
 
     #gameCanvas {
         position: relative !important;
         top: auto !important;
         left: auto !important;
-        /* Explicit pixel height: full viewport minus the controller bar.
-           --ctrl-h is written by JS on load and resize.
-           Fallback: 100vw/1.988 ≈ controller natural height. */
         width: 100% !important;
-        height: calc(100vh - var(--ctrl-h, calc(100vw / 1.988))) !important;
-        min-height: 0 !important;
+        /* height set by JS via --canvas-h */
+        height: var(--canvas-h, calc(100dvh - 220px)) !important;
         flex: 0 0 auto;
+        min-height: 0;
+        display: block;
         z-index: 1;
     }
+}
+
+#gameCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 1;
+    display: block;
 }
 
 /* Desktop roll button */
@@ -213,48 +223,46 @@ body {
     z-index: 5;
 }
 
-/* PAUSE BUTTON */
+/* Pause button */
 #gamePauseBtn {
     width: 50px; height: 50px;
     left: 470px; top: 115px;
     background-image: url('assets/pause.png');
     z-index: 30;
-    transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 @media (max-width: 768px) {
-    #rollBtn { display: none; }
-
     #gamePauseBtn {
         position: absolute;
-        /* Mirror desktop ratio 470/600 horizontally */
         left:   calc(100vw * 470 / 600);
-        /* Mirror desktop ratio 115/1080 against canvas height only */
-        top:    calc((100vh - var(--ctrl-h, calc(100vw / 1.988))) * 115 / 1080);
+        top:    calc(var(--canvas-h, calc(100dvh - 220px)) * 115 / 1080);
         width:  calc(100vw * 50 / 600);
         height: calc(100vw * 50 / 600);
         z-index: 30;
     }
+
+    #rollBtn {
+        display: none;
+    }
 }
 
 /* =============================================
-   PAUSE OVERLAY MODAL
-   Uses flexbox centering — JS sets display:flex
+   PAUSE OVERLAY
    ============================================= */
 .overlay {
     display: none;
     position: absolute;
     inset: 0;
     z-index: 110;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0,0,0,0.7);
     align-items: center;
     justify-content: center;
 }
 
 #pauseMenuCard {
+    width: 400px; height: 500px;
     position: relative;
-    width: 400px;
-    height: 500px;
+    margin: auto;
     background: url('assets/pausebg.png') no-repeat center center;
     background-size: 100% 100%;
 }
@@ -269,6 +277,7 @@ body {
         width: 35%; height: 24%;
         left: 32.5%; top: 16%;
     }
+
     #quitBtn {
         width: 35%; height: 24%;
         left: 32.5%; top: 58%;
@@ -280,6 +289,7 @@ body {
     left: 125px; top: 90px;
     background-image: url('assets/playbutton.png');
 }
+
 #quitBtn {
     width: 150px; height: 150px;
     left: 125px; top: 240px;
@@ -295,16 +305,16 @@ body {
     top: 0; left: 0;
     width: 100%; height: 100%;
     z-index: 20;
-    background-color: rgba(0, 0, 0, 0.55);
+    background-color: rgba(0,0,0,0.55);
 }
 
 .powerup-panel {
     position: absolute;
-    left: 50%;
-    bottom: 10%;
+    left: 50%; bottom: 10%;
     transform: translateX(-50%);
     width: min(92%, 370px);
     max-width: 370px;
+    padding: 0;
     background: transparent;
 }
 
@@ -312,7 +322,7 @@ body {
     display: none;
     position: relative;
     width: 100%;
-    padding: 22px 20px;
+    padding: 22px 20px 22px;
     background: #3d2810;
     border: 6px solid #4a8a2a;
     border-radius: 14px;
@@ -387,11 +397,19 @@ body {
         repeating-linear-gradient(88deg, transparent, transparent 16px, rgba(0,0,0,0.045) 16px, rgba(0,0,0,0.045) 17px),
         linear-gradient(180deg, #dac09a 0%, #c4a070 18%, #b08050 50%, #9a6e3a 82%, #8a5e2a 100%);
     color: #2c1810; font-size: 16px; font-weight: 900;
-    font-family: 'Courier New', monospace; text-transform: uppercase;
-    letter-spacing: 0.08em; cursor: pointer;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    cursor: pointer;
     text-shadow: 0 1px 0 rgba(255,255,255,0.38);
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.42), inset 0 -2px 4px rgba(0,0,0,0.28), 0 5px 0 #5a3a18, 0 6px 10px rgba(0,0,0,0.45);
     transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.powerup-btn:hover {
+    background-image:
+        repeating-linear-gradient(88deg, transparent, transparent 16px, rgba(0,0,0,0.045) 16px, rgba(0,0,0,0.045) 17px),
+        linear-gradient(180deg, #ead4b0 0%, #d4b080 18%, #c09060 50%, #aa7e4a 82%, #9a6e3a 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -2px 4px rgba(0,0,0,0.22), 0 6px 0 #5a3a18, 0 7px 12px rgba(0,0,0,0.5);
 }
 
 .powerup-btn:active {
@@ -403,21 +421,19 @@ body {
 
 /* =============================================
    MOBILE CONTROLLER
-   flex-shrink:0 so it always stays at its natural
-   height and the canvas takes the remaining space.
    ============================================= */
 .mobile-controls-container {
     display: none;
     position: relative;
+    bottom: auto; left: auto; right: auto;
     width: 100%;
-    /* height set via JS --ctrl-h; fallback below */
-    height: calc(100vw / 1.988);
-    max-height: 302px;
-    min-height: 180px;
+    /* height driven by JS --ctrl-h */
+    height: var(--ctrl-h, 220px);
     background-image: url('assets/controller.png');
-    background-size: 100% 100%;
+    background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
+    border: none; box-shadow: none;
     z-index: 25;
     flex-shrink: 0;
     touch-action: manipulation;
@@ -429,11 +445,14 @@ body {
 
 .mobile-controls-container button {
     position: absolute;
-    background: transparent; border: none;
-    cursor: pointer; color: transparent; font-size: 0;
+    background: transparent;
+    border: none; cursor: pointer;
+    color: transparent; font-size: 0;
     -webkit-tap-highlight-color: rgba(255,255,255,0.15);
     touch-action: manipulation;
-    border-radius: 8px; padding: 0; margin: 0;
+    border-radius: 8px;
+    transition: background 0.1s;
+    padding: 0; margin: 0;
 }
 
 .mobile-controls-container button:active { background: rgba(255,255,255,0.2); }
@@ -443,7 +462,8 @@ body {
 #moveRightBtn { left: 23%; top: 48%; width: 16%; height: 40%; }
 
 #rollBtnMobile {
-    left: 38%; top: 8%; width: 22%; height: 82%;
+    left: 38%; top: 8%;
+    width: 22%; height: 82%;
     border-radius: 12px;
     background-image: none !important;
     box-shadow: none !important;
