@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ISLAND BOYS</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -23,7 +23,6 @@
         </div>
 
         <!-- TUTORIAL INFORMATION DISPLAY SCREEN -->
-        <!-- instructionCard removed — tutorial content is already in the background image -->
         <div id="tutorialPanel" class="screen">
             <button id="tutBackBtn" class="action-trigger"></button>
         </div>
@@ -38,13 +37,13 @@
             <!-- Desktop roll button -->
             <button id="rollBtn" class="action-trigger"></button>
 
-            <!-- MOBILE CONTROLLER — buttons float directly over controller.png -->
+            <!-- MOBILE CONTROLLER -->
             <div id="mobileControls" class="mobile-controls-container">
-                <button id="moveUpBtn" class="move-btn move-up" title="Move Up">▲</button>
-                <button id="moveLeftBtn" class="move-btn move-left" title="Move Left">◀</button>
+                <button id="moveUpBtn"    class="move-btn move-up"    title="Move Up">▲</button>
+                <button id="moveLeftBtn"  class="move-btn move-left"  title="Move Left">◀</button>
                 <button id="moveRightBtn" class="move-btn move-right" title="Move Right">▶</button>
                 <button id="rollBtnMobile" title="Roll"></button>
-                <button id="acceptBtn" title="Accept (Y)">Y</button>
+                <button id="acceptBtn"  title="Accept (Y)">Y</button>
                 <button id="declineBtn" title="Decline (N)">N</button>
             </div>
 
@@ -75,14 +74,14 @@
             </div>
         </div>
 
-        <!-- MODAL OVERLAY SUSPENSION POPUP CONTAINER -->
+        <!-- MODAL PAUSE POPUP -->
         <div id="pauseOverlay" class="overlay">
             <div id="pauseMenuCard">
                 <button id="resumeBtn" class="action-trigger"></button>
-                <button id="quitBtn" class="action-trigger"></button>
+                <button id="quitBtn"   class="action-trigger"></button>
             </div>
         </div>
     </div>
     <script src="game.js"></script>
 </body>
-</html> 
+</html>
