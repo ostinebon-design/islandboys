@@ -1,4 +1,43 @@
 // =============================================
+//  MOBILE CANVAS HEIGHT FIX
+//  Must run before anything else so the canvas
+//  has a real height when the game screen opens.
+// =============================================
+(function mobileSizing() {
+    function setControllerHeight() {
+        if (window.innerWidth > 768) return;
+
+        const ctrl = document.getElementById("mobileControls");
+        // getBoundingClientRect is 0 before the element is visible,
+        // so we also use the CSS formula as a reliable fallback.
+        const measured = ctrl ? ctrl.getBoundingClientRect().height : 0;
+        const ctrlH = measured > 10
+            ? measured
+            : Math.min(302, Math.max(180, window.innerWidth / 1.988));
+
+        document.documentElement.style.setProperty("--ctrl-h", ctrlH + "px");
+
+        const cvs = document.getElementById("gameCanvas");
+        if (cvs) {
+            cvs.style.height = Math.max(200, window.innerHeight - ctrlH) + "px";
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", setControllerHeight);
+    } else {
+        setControllerHeight();
+    }
+
+    window.addEventListener("resize", setControllerHeight);
+    // Delay handles mobile Chrome hiding the address bar after load
+    setTimeout(setControllerHeight, 80);
+    setTimeout(setControllerHeight, 400);
+
+    window._setSizing = setControllerHeight;
+})();
+
+// =============================================
 //  INTRO VIDEO LOGIC
 // =============================================
 (function () {
@@ -150,10 +189,6 @@ let p2 = new Player(4, "P2", "blue");
 
 // =============================================
 //  CANVAS SCALING
-//  Design resolution: 600x1080.
-//  syncCanvasResolution only writes canvas.width/
-//  height when they actually differ — reassigning
-//  wipes the buffer, which caused the pause glitch.
 // =============================================
 const canvas = document.getElementById("gameCanvas");
 const g2d = canvas.getContext("2d");
@@ -173,7 +208,17 @@ function applyScale() {
 
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+    const target = document.getElementById(id);
+    target.classList.add('active');
+    // After switching to the game screen the controller becomes visible —
+    // measure it now so the canvas height is correct before the first paint.
+    if (id === "activeGamePanel" && window._setSizing) {
+        // rAF ensures the browser has laid out the newly visible elements
+        requestAnimationFrame(() => {
+            window._setSizing();
+            requestAnimationFrame(() => window._setSizing());
+        });
+    }
 }
 
 window.addEventListener("resize", () => {
@@ -282,8 +327,8 @@ document.getElementById("powerUpCancelBtn").addEventListener("click", () => {
 //  RENDER ENGINE
 // =============================================
 function repaintAll() {
-    syncCanvasResolution(); // no-op if size already matches — no buffer wipe
-    applyScale();           // scale all draws to 600x1080 design space
+    syncCanvasResolution();
+    applyScale();
 
     g2d.clearRect(0, 0, 600, 1080);
     g2d.fillStyle = "#000"; g2d.fillRect(0, 0, 600, 1080);
@@ -301,7 +346,7 @@ function repaintAll() {
         if (!systemMessage || systemMessage.includes("ROLL")) {
             if (isDecidingTurn) {
                 let pn = (rollingForPlayer === 1) ? "P1" : "P2";
-                if (!p1StartRoll && !p2StartRoll)        systemMessage = pn + ": ROLL TO START";
+                if (!p1StartRoll && !p2StartRoll)         systemMessage = pn + ": ROLL TO START";
                 else if (p1StartRoll > 0 && !p2StartRoll) systemMessage = "P1 rolled " + p1StartRoll + ". P2 ROLL!";
                 else if (p2StartRoll > 0 && !p1StartRoll) systemMessage = "P2 rolled " + p2StartRoll + ". P1 ROLL!";
             } else if (needsToRollOp && !waitingToRollPowerUp) {
@@ -454,6 +499,8 @@ function resetGame() {
     currentDiceImg=null;
     gameOverWinner="";gameOverTargetGoal=0;gameOverP1Score=0;gameOverP2Score=0;
     targetGoal=Math.floor(Math.random()*101);
+    // Re-measure controller now that the game screen is active
+    if (window._setSizing) window._setSizing();
     randomizeGrid(); repaintAll();
 }
 
@@ -533,16 +580,10 @@ function startPowerUpAnimation() {
     },80);
 }
 
-// =============================================
-//  PAUSE — does NOT call repaintAll so the canvas
-//  buffer stays intact under the overlay, preventing
-//  the layout glitch that appeared on pause.
-// =============================================
 function togglePause() {
     isPaused=true; p1.stopTimer(); p2.stopTimer();
     const overlay = document.getElementById("pauseOverlay");
     overlay.style.display = "flex";
-    // intentionally no repaintAll() — canvas stays frozen under the modal
 }
 
 function resumeGame() {
@@ -551,7 +592,7 @@ function resumeGame() {
     if (!needsToRollOp&&!gameOver&&!isDecidingTurn){
         if (currentTurn===1) p1.startTimer(); else p2.startTimer();
     }
-    repaintAll(); // safe now that overlay is gone
+    repaintAll();
 }
 
 function endTurn() {
