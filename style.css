@@ -38,6 +38,7 @@ body {
     position: absolute;
     top: 0;
     left: 0;
+    z-index: 1;
 }
 
 .screen.active {
@@ -49,12 +50,13 @@ body {
    ============================================= */
 #introPanel {
     background: #000;
-    align-items: center;
-    justify-content: center;
+    z-index: 100;
 }
 
 #introPanel.active {
     display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #introVideo {
@@ -68,7 +70,7 @@ body {
     position: absolute;
     bottom: 28px;
     right: 24px;
-    z-index: 50;
+    z-index: 110;
     background: rgba(0, 0, 0, 0.65);
     color: #ffe97a;
     border: 2px solid #ffe97a;
@@ -90,12 +92,14 @@ body {
    ============================================= */
 #homePanel {
     background: url('assets/homebg.jpg') no-repeat center center;
-    background-size: 100% 100%;
+    background-size: cover;
+    z-index: 100;
 }
 
 #tutorialPanel {
     background: url('assets/tutbg.png') no-repeat center center;
-    background-size: 100% 100%;
+    background-size: cover;
+    z-index: 100;
 }
 
 /* =============================================
@@ -178,16 +182,20 @@ body {
    GAME SCREEN — CANVAS + OVERLAID BUTTONS
    ============================================= */
 #activeGamePanel {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     background: #000;
     overflow: hidden;
+    /* display is controlled by .screen / .screen.active only */
 }
 
-/* On mobile: flex column so canvas fills above controller */
+/* KEY FIX: scope the flex layout to .active only so it
+   doesn't show through when another screen is active */
 @media (max-width: 768px) {
-    #activeGamePanel {
+    #activeGamePanel.active {
         display: flex;
         flex-direction: column;
         height: 100dvh;
@@ -199,7 +207,6 @@ body {
         top: auto !important;
         left: auto !important;
         width: 100% !important;
-        /* height set by JS via --canvas-h */
         height: var(--canvas-h, calc(100dvh - 220px)) !important;
         flex: 0 0 auto;
         min-height: 0;
@@ -427,7 +434,6 @@ body {
     position: relative;
     bottom: auto; left: auto; right: auto;
     width: 100%;
-    /* height driven by JS --ctrl-h */
     height: var(--ctrl-h, 220px);
     background-image: url('assets/controller.png');
     background-size: cover;
