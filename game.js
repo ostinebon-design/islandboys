@@ -40,7 +40,10 @@
     const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) skipBtn.textContent = "TAP TO START ▶";
 
+    let introTransitionDone = false;
     function goToHome() {
+        if (introTransitionDone) return;
+        introTransitionDone = true;
         try { introVideo.pause(); } catch(e) {}
         introPanel.classList.remove("active");
         document.getElementById("homePanel").classList.add("active");
@@ -130,8 +133,9 @@ function checkAllAssetsLoaded() {
         powerUpImages[1] = images['co'];
         powerUpImages[2] = images['sx'];
     }
-    // Repaint as each asset arrives so mobile sees content as it loads
-    if (gameStarted && !gameOver) {
+    // Only repaint if the game screen is actually visible
+    const gamePanel = document.getElementById("activeGamePanel");
+    if (gameStarted && !gameOver && gamePanel && gamePanel.classList.contains("active")) {
         requestAnimationFrame(repaintAll);
     }
 }
@@ -236,22 +240,19 @@ function ph(h, sy) { return h * sy; }
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    if (id === "activeGamePanel") {
-        if (window._setSizing) {
-            window._setSizing();
-            requestAnimationFrame(() => {
-                window._setSizing();
-                syncCanvas();
-                requestAnimationFrame(() => {
-                    window._setSizing();
-                    syncCanvas();
-                    repaintAll();
-                });
-            });
+   if (id === "activeGamePanel") {
+    function waitForSize(attempts) {
+        if (window._setSizing) window._setSizing();
+        syncCanvas();
+        if ((canvas.width > 10 && canvas.height > 100) || attempts <= 0) {
+            repaintAll();
         } else {
-            requestAnimationFrame(() => { syncCanvas(); repaintAll(); });
+            setTimeout(() => waitForSize(attempts - 1), 50);
         }
     }
+    setTimeout(() => waitForSize(20), 30);
+}
+
 }
 
 window.addEventListener("resize", () => {
@@ -262,17 +263,20 @@ window.addEventListener("resize", () => {
 // =============================================
 //  PLAY BUTTON — wait for real canvas dimensions
 // =============================================
+let playBtnCooldown = false;
 document.getElementById("playBtn").addEventListener("click", () => {
+    if (playBtnCooldown) return;
+    playBtnCooldown = true;
+    setTimeout(() => { playBtnCooldown = false; }, 800);
+
     gameStarted = true;
     showScreen("activeGamePanel");
 
     function tryStart(tries) {
         if (window._setSizing) window._setSizing();
         syncCanvas();
-
         const w = canvas.width;
         const h = canvas.height;
-
         if ((w > 10 && h > 100) || tries <= 0) {
             resetGame();
             window.focus();
@@ -281,7 +285,6 @@ document.getElementById("playBtn").addEventListener("click", () => {
         }
     }
 
-    // 4 rAF frames to let flex layout settle, then poll up to 30 times
     requestAnimationFrame(() =>
         requestAnimationFrame(() =>
             requestAnimationFrame(() =>
